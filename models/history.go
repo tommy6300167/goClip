@@ -44,6 +44,16 @@ func (h *History) GetItem(index int) *ClipboardItem {
 	return h.Items[index]
 }
 
+func (h *History) RemoveItem(index int) *ClipboardItem {
+	if index < 0 || index >= len(h.Items) {
+		return nil
+	}
+	
+	removedItem := h.Items[index]
+	h.Items = append(h.Items[:index], h.Items[index+1:]...)
+	return removedItem
+}
+
 func (h *History) ToFileFormat() []string {
 	lines := make([]string, len(h.Items))
 	for i := len(h.Items) - 1; i >= 0; i-- {

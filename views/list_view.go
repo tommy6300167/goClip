@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
@@ -16,6 +17,7 @@ type ListView struct {
 	historyData binding.StringList
 	config      *models.AppConfig
 	onSelected  func(int)
+	onDelete    func(int)
 	selectedIndex int
 }
 
@@ -29,14 +31,37 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list = widget.NewListWithData(
 		lv.historyData,
 		func() fyne.CanvasObject { 
+			deleteBtn := widget.NewButton("🗑️", nil)
+			deleteBtn.Resize(fyne.NewSize(30, 30))
+			
 			label := widget.NewLabel("item")
 			label.Wrapping = fyne.TextWrapOff
-			return label
+			
+			return container.NewHBox(deleteBtn, label)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			str, _ := di.(binding.String).Get()
 			parts := strings.SplitN(str, "\t", 3)
-			lbl := co.(*widget.Label)
+			
+			containerObj := co.(*fyne.Container)
+			deleteBtn := containerObj.Objects[0].(*widget.Button)
+			lbl := containerObj.Objects[1].(*widget.Label)
+			
+			// Get the current index by finding this item in the data
+			items, _ := lv.historyData.Get()
+			currentIndex := -1
+			for i, item := range items {
+				if item == str {
+					currentIndex = i
+					break
+				}
+			}
+			
+			deleteBtn.OnTapped = func() {
+				if lv.onDelete != nil && currentIndex >= 0 {
+					lv.onDelete(currentIndex)
+				}
+			}
 			
 			if len(parts) == 3 && parts[2] == "IMAGE" {
 				displayText := parts[0] + " [IMAGE]"
@@ -70,6 +95,10 @@ func (lv *ListView) GetWidget() *widget.List {
 
 func (lv *ListView) SetOnSelected(callback func(int)) {
 	lv.onSelected = callback
+}
+
+func (lv *ListView) SetOnDelete(callback func(int)) {
+	lv.onDelete = callback
 }
 
 func (lv *ListView) LoadFromHistory(items []*models.ClipboardItem) {
@@ -131,4 +160,30 @@ func (lv *ListView) GetSelectedItem() (string, bool) {
 	}
 	
 	return items[lv.selectedIndex], true
+}
+
+func (lv *ListView) RemoveItemAt(index int) {
+	items, _ := lv.historyData.Get()
+	if index < 0 || index >= len(items) {
+		return
+	}
+	
+	newItems := append(items[:index], items[index+1:]...)
+	lv.historyData.Set(newItems)
+	
+	// Adjust selected index if necessary
+	if lv.selectedIndex >= index {
+		if lv.selectedIndex > 0 {
+			lv.selectedIndex--
+		} else if len(newItems) == 0 {
+			lv.selectedIndex = -1
+		}
+	}
+	
+	// Update selection in the list
+	if lv.selectedIndex >= 0 && lv.selectedIndex < len(newItems) {
+		lv.list.Select(lv.selectedIndex)
+	} else {
+		lv.list.UnselectAll()
+	}
 }

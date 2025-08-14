@@ -43,6 +43,7 @@ func (mv *MainView) Initialize(window fyne.Window) {
 
 func (mv *MainView) setupEventHandlers() {
 	mv.listView.SetOnSelected(mv.onItemSelected)
+	mv.listView.SetOnDelete(mv.onDeleteItem)
 	
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
@@ -77,6 +78,27 @@ func (mv *MainView) onItemSelected(index int) {
 	
 	mv.currentSelectedItem = item
 	mv.detailView.ShowItem(item)
+}
+
+func (mv *MainView) onDeleteItem(index int) {
+	err := mv.clipboardController.RemoveHistoryItem(index)
+	if err != nil {
+		mv.updateStatus("刪除失敗: " + err.Error())
+		return
+	}
+	
+	mv.listView.RemoveItemAt(index)
+	
+	// If the deleted item was selected, clear the detail view
+	if mv.currentSelectedItem != nil {
+		item := mv.clipboardController.GetHistoryItem(index)
+		if item == nil {
+			mv.detailView.Clear()
+			mv.currentSelectedItem = nil
+		}
+	}
+	
+	mv.updateStatus("項目已刪除")
 }
 
 func (mv *MainView) onCopyToClipboard() error {

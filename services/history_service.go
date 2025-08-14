@@ -21,7 +21,7 @@ func (hs *HistoryService) LoadFromFile() error {
 	if err != nil {
 		return nil // File might not exist yet, that's ok
 	}
-	
+
 	hs.history.FromFileFormat(lines)
 	return nil
 }
@@ -44,6 +44,19 @@ func (hs *HistoryService) GetItem(index int) *models.ClipboardItem {
 	return hs.history.GetItem(index)
 }
 
+func (hs *HistoryService) RemoveItem(index int) error {
+	removedItem := hs.history.RemoveItem(index)
+	if removedItem == nil {
+		return nil
+	}
+
+	if removedItem.Type == models.ClipImage && removedItem.FilePath != "" {
+		hs.fileService.CleanupImageFiles([]string{removedItem.FilePath})
+	}
+
+	return hs.SaveToFile()
+}
+
 func (hs *HistoryService) Clear() error {
 	// Clean up image files first
 	imagePaths := make([]string, 0)
@@ -53,14 +66,14 @@ func (hs *HistoryService) Clear() error {
 		}
 	}
 	hs.fileService.CleanupImageFiles(imagePaths)
-	
+
 	// Clear history
 	hs.history.Clear()
-	
+
 	// Delete files
 	hs.fileService.DeleteHistoryFile()
 	hs.fileService.DeleteImageDirectory()
-	
+
 	return nil
 }
 
@@ -76,7 +89,7 @@ func (hs *HistoryService) MaintainLimit() {
 			}
 		}
 		hs.fileService.CleanupImageFiles(imagePaths)
-		
+
 		// Trim history
 		hs.history.Items = items[:hs.history.MaxItems]
 		hs.SaveToFile()
