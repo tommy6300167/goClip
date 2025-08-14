@@ -15,7 +15,10 @@ type DetailView struct {
 	container   *fyne.Container
 	textEntry   *widget.Entry
 	imageCard   *widget.Card
+	saveButton  *widget.Button
 	currentItem *models.ClipboardItem
+	onSave      func(string)
+	originalText string
 }
 
 func NewDetailView() *DetailView {
@@ -26,7 +29,24 @@ func NewDetailView() *DetailView {
 	dv.textEntry.SetPlaceHolder("左側選一筆來預覽內容")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
 	
-	dv.container = container.NewBorder(nil, nil, nil, nil, dv.textEntry)
+	dv.saveButton = widget.NewButton("💾 保存", func() {
+		if dv.onSave != nil {
+			dv.onSave(dv.textEntry.Text)
+		}
+	})
+	dv.saveButton.Hide()
+	
+	// Monitor text changes to show/hide save button
+	dv.textEntry.OnChanged = func(text string) {
+		if dv.originalText != text && dv.currentItem != nil && dv.currentItem.Type == models.ClipText {
+			dv.saveButton.Show()
+		} else {
+			dv.saveButton.Hide()
+		}
+	}
+	
+	buttonContainer := container.NewHBox(dv.saveButton)
+	dv.container = container.NewBorder(nil, buttonContainer, nil, nil, dv.textEntry)
 	
 	return dv
 }
@@ -46,8 +66,10 @@ func (dv *DetailView) ShowItem(item *models.ClipboardItem) {
 }
 
 func (dv *DetailView) showText(item *models.ClipboardItem) {
+	dv.originalText = item.Content
 	dv.textEntry.SetText(item.Content)
 	dv.textEntry.Show()
+	dv.saveButton.Hide()
 	dv.imageCard = nil
 	dv.container.Objects[0] = dv.textEntry
 	dv.container.Refresh()
@@ -85,8 +107,10 @@ func (dv *DetailView) ShowError(message string) {
 func (dv *DetailView) Clear() {
 	dv.textEntry.SetText("")
 	dv.textEntry.Show()
+	dv.saveButton.Hide()
 	dv.imageCard = nil
 	dv.currentItem = nil
+	dv.originalText = ""
 	dv.container.Objects[0] = dv.textEntry
 	dv.container.Refresh()
 }
@@ -97,4 +121,8 @@ func (dv *DetailView) GetCurrentText() string {
 
 func (dv *DetailView) GetCurrentItem() *models.ClipboardItem {
 	return dv.currentItem
+}
+
+func (dv *DetailView) SetOnSave(callback func(string)) {
+	dv.onSave = callback
 }
