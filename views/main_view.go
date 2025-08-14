@@ -117,11 +117,13 @@ func (mv *MainView) updateStatus(message string) {
 }
 
 func (mv *MainView) OnNewClipboardItem(item *models.ClipboardItem) {
-	mv.listView.PrependItem(item)
-	
-	if item.Type == models.ClipImage {
-		mv.updateStatus("圖片已記錄")
-	} else {
-		mv.updateStatus("文字已記錄")
-	}
+	fyne.Do(func() {
+		mv.listView.PrependItem(item)
+		
+		if item.Type == models.ClipImage {
+			mv.updateStatus("圖片已記錄")
+		} else {
+			mv.updateStatus("文字已記錄")
+		}
+	})
 }
