@@ -73,7 +73,7 @@ func (cs *ClipboardService) ReadClipboardText() (string, error) {
 }
 
 func (cs *ClipboardService) CopyTextToClipboard(text string) error {
-	cmd := exec.Command("/usr/bin/pbcopy")
+	cmd := cs.utf8Env(exec.Command("/usr/bin/pbcopy"))
 	cmd.Stdin = strings.NewReader(text)
 	return cmd.Run()
 }
