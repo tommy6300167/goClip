@@ -44,6 +44,7 @@ func (mv *MainView) Initialize(window fyne.Window) {
 func (mv *MainView) setupEventHandlers() {
 	mv.listView.SetOnSelected(mv.onItemSelected)
 	mv.listView.SetOnDelete(mv.onDeleteItem)
+	mv.detailView.SetOnSave(mv.onSaveItem)
 	
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
@@ -99,6 +100,48 @@ func (mv *MainView) onDeleteItem(index int) {
 	}
 	
 	mv.updateStatus("項目已刪除")
+}
+
+func (mv *MainView) onSaveItem(newContent string) {
+	if mv.currentSelectedItem == nil {
+		mv.updateStatus("沒有選中的項目")
+		return
+	}
+	
+	// Find the index of current selected item
+	items := mv.clipboardController.GetHistoryItems()
+	selectedIndex := -1
+	for i, item := range items {
+		if item == mv.currentSelectedItem {
+			selectedIndex = i
+			break
+		}
+	}
+	
+	if selectedIndex == -1 {
+		mv.updateStatus("找不到選中的項目")
+		return
+	}
+	
+	err := mv.clipboardController.UpdateHistoryItem(selectedIndex, newContent)
+	if err != nil {
+		mv.updateStatus("保存失敗: " + err.Error())
+		return
+	}
+	
+	// Update the current item content
+	mv.currentSelectedItem.Content = newContent
+	
+	// Reload the list to reflect changes
+	mv.listView.LoadFromHistory(mv.clipboardController.GetHistoryItems())
+	
+	// Reselect the item
+	mv.listView.SelectFirst()
+	if selectedIndex < len(items) {
+		mv.listView.GetWidget().Select(selectedIndex)
+	}
+	
+	mv.updateStatus("已保存修改")
 }
 
 func (mv *MainView) onCopyToClipboard() error {

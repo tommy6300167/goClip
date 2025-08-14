@@ -57,6 +57,13 @@ func (hs *HistoryService) RemoveItem(index int) error {
 	return hs.SaveToFile()
 }
 
+func (hs *HistoryService) UpdateItem(index int, newContent string) error {
+	if hs.history.UpdateItem(index, newContent) {
+		return hs.SaveToFile()
+	}
+	return nil
+}
+
 func (hs *HistoryService) Clear() error {
 	// Clean up image files first
 	imagePaths := make([]string, 0)

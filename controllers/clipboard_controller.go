@@ -115,6 +115,10 @@ func (cc *ClipboardController) RemoveHistoryItem(index int) error {
 	return cc.historyService.RemoveItem(index)
 }
 
+func (cc *ClipboardController) UpdateHistoryItem(index int, newContent string) error {
+	return cc.historyService.UpdateItem(index, newContent)
+}
+
 func (cc *ClipboardController) ClearHistory() error {
 	cc.clipboardService.ClearSystemClipboard()
 	cc.lastText = ""

@@ -54,6 +54,20 @@ func (h *History) RemoveItem(index int) *ClipboardItem {
 	return removedItem
 }
 
+func (h *History) UpdateItem(index int, newContent string) bool {
+	if index < 0 || index >= len(h.Items) {
+		return false
+	}
+	
+	item := h.Items[index]
+	if item.Type == ClipText {
+		item.Content = newContent
+		return true
+	}
+	
+	return false
+}
+
 func (h *History) ToFileFormat() []string {
 	lines := make([]string, len(h.Items))
 	for i := len(h.Items) - 1; i >= 0; i-- {
