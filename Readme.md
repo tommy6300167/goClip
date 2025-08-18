@@ -13,8 +13,8 @@ go env GOARCH
 uname -m
 
 GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 \
- fyne package --os darwin \
- --icon assets/clip.png \  
+fyne package --os darwin \
+ --icon assets/clip.png \
  --name "超吉貼-intel" \
  --id com.yourdomain.superclip \
  --release

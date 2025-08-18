@@ -25,9 +25,9 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		clipboardController: clipboardController,
 		config:              config,
 	}
-	
+
 	mv.statusLabel = widget.NewLabel("監看中… ⌘C 內容會自動記錄（文字＋圖片）")
-	
+
 	return mv
 }
 
@@ -35,7 +35,7 @@ func (mv *MainView) Initialize(window fyne.Window) {
 	mv.listView = NewListView(mv.config)
 	mv.detailView = NewDetailView()
 	mv.toolbar = NewToolbar(window, mv.clipboardController)
-	
+
 	mv.setupEventHandlers()
 	mv.loadInitialData()
 	mv.buildLayout()
@@ -45,7 +45,7 @@ func (mv *MainView) setupEventHandlers() {
 	mv.listView.SetOnSelected(mv.onItemSelected)
 	mv.listView.SetOnDelete(mv.onDeleteItem)
 	mv.detailView.SetOnSave(mv.onSaveItem)
-	
+
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
 	mv.toolbar.SetOnExport(mv.onExportHistory)
@@ -60,10 +60,10 @@ func (mv *MainView) loadInitialData() {
 func (mv *MainView) buildLayout() {
 	left := container.NewBorder(nil, nil, nil, nil, mv.listView.GetWidget())
 	right := container.NewBorder(nil, mv.statusLabel, nil, nil, mv.detailView.GetWidget())
-	
+
 	split := container.NewHSplit(left, right)
 	split.SetOffset(0.35)
-	
+
 	mv.content = container.NewBorder(mv.toolbar.GetWidget(), nil, nil, nil, split)
 }
 
@@ -76,7 +76,7 @@ func (mv *MainView) onItemSelected(index int) {
 	if item == nil {
 		return
 	}
-	
+
 	mv.currentSelectedItem = item
 	mv.detailView.ShowItem(item)
 }
@@ -87,10 +87,8 @@ func (mv *MainView) onDeleteItem(index int) {
 		mv.updateStatus("刪除失敗: " + err.Error())
 		return
 	}
-	
+
 	mv.listView.RemoveItemAt(index)
-	
-	// If the deleted item was selected, clear the detail view
 	if mv.currentSelectedItem != nil {
 		item := mv.clipboardController.GetHistoryItem(index)
 		if item == nil {
@@ -98,7 +96,7 @@ func (mv *MainView) onDeleteItem(index int) {
 			mv.currentSelectedItem = nil
 		}
 	}
-	
+
 	mv.updateStatus("項目已刪除")
 }
 
@@ -107,8 +105,7 @@ func (mv *MainView) onSaveItem(newContent string) {
 		mv.updateStatus("沒有選中的項目")
 		return
 	}
-	
-	// Find the index of current selected item
+
 	items := mv.clipboardController.GetHistoryItems()
 	selectedIndex := -1
 	for i, item := range items {
@@ -117,30 +114,27 @@ func (mv *MainView) onSaveItem(newContent string) {
 			break
 		}
 	}
-	
+
 	if selectedIndex == -1 {
 		mv.updateStatus("找不到選中的項目")
 		return
 	}
-	
+
 	err := mv.clipboardController.UpdateHistoryItem(selectedIndex, newContent)
 	if err != nil {
 		mv.updateStatus("保存失敗: " + err.Error())
 		return
 	}
-	
-	// Update the current item content
+
 	mv.currentSelectedItem.Content = newContent
-	
-	// Reload the list to reflect changes
+
 	mv.listView.LoadFromHistory(mv.clipboardController.GetHistoryItems())
-	
-	// Reselect the item
+
 	mv.listView.SelectFirst()
 	if selectedIndex < len(items) {
 		mv.listView.GetWidget().Select(selectedIndex)
 	}
-	
+
 	mv.updateStatus("已保存修改")
 }
 
@@ -148,7 +142,7 @@ func (mv *MainView) onCopyToClipboard() error {
 	if mv.currentSelectedItem == nil {
 		return nil
 	}
-	
+
 	if mv.currentSelectedItem.Type == models.ClipImage {
 		return mv.clipboardController.CopyItemToClipboard(mv.currentSelectedItem)
 	} else {
@@ -184,7 +178,7 @@ func (mv *MainView) updateStatus(message string) {
 func (mv *MainView) OnNewClipboardItem(item *models.ClipboardItem) {
 	fyne.Do(func() {
 		mv.listView.PrependItem(item)
-		
+
 		if item.Type == models.ClipImage {
 			mv.updateStatus("圖片已記錄")
 		} else {
