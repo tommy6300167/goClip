@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"clipmini/controllers"
@@ -28,11 +29,22 @@ func NewToolbar(window fyne.Window, clipboardController *controllers.ClipboardCo
 		window:              window,
 	}
 	
-	tb.copyBtn = widget.NewButton("複製回剪貼簿", tb.handleCopy)
-	tb.clearBtn = widget.NewButton("清空", tb.handleClear)
-	tb.exportBtn = widget.NewButton("匯出到檔案", tb.handleExport)
+	// 創建帶圖示的精美按鈕
+	tb.copyBtn = widget.NewButtonWithIcon("複製", theme.ContentCopyIcon(), tb.handleCopy)
+	tb.copyBtn.Importance = widget.HighImportance
 	
-	tb.container = container.NewHBox(tb.copyBtn, tb.clearBtn, tb.exportBtn)
+	tb.clearBtn = widget.NewButtonWithIcon("清空", theme.DeleteIcon(), tb.handleClear)
+	tb.clearBtn.Importance = widget.MediumImportance
+	
+	tb.exportBtn = widget.NewButtonWithIcon("匯出", theme.DocumentSaveIcon(), tb.handleExport)
+	tb.exportBtn.Importance = widget.LowImportance
+	
+	// 添加間距讓按鈕更舒適
+	tb.container = container.NewHBox(
+		container.NewPadded(tb.copyBtn),
+		container.NewPadded(tb.clearBtn),
+		container.NewPadded(tb.exportBtn),
+	)
 	
 	return tb
 }

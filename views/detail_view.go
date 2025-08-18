@@ -6,18 +6,19 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"clipmini/models"
 )
 
 type DetailView struct {
-	container   *fyne.Container
-	textEntry   *widget.Entry
-	imageCard   *widget.Card
-	saveButton  *widget.Button
-	currentItem *models.ClipboardItem
-	onSave      func(string)
+	container    *fyne.Container
+	textEntry    *widget.Entry
+	imageCard    *widget.Card
+	saveButton   *widget.Button
+	currentItem  *models.ClipboardItem
+	onSave       func(string)
 	originalText string
 }
 
@@ -25,18 +26,18 @@ func NewDetailView() *DetailView {
 	dv := &DetailView{
 		textEntry: widget.NewMultiLineEntry(),
 	}
-	
+
 	dv.textEntry.SetPlaceHolder("左側選一筆來預覽內容")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
-	
-	dv.saveButton = widget.NewButton("💾 保存", func() {
+
+	dv.saveButton = widget.NewButtonWithIcon("保存", theme.DocumentSaveIcon(), func() {
 		if dv.onSave != nil {
 			dv.onSave(dv.textEntry.Text)
 		}
 	})
+	dv.saveButton.Importance = widget.HighImportance
 	dv.saveButton.Hide()
-	
-	// Monitor text changes to show/hide save button
+
 	dv.textEntry.OnChanged = func(text string) {
 		if dv.originalText != text && dv.currentItem != nil && dv.currentItem.Type == models.ClipText {
 			dv.saveButton.Show()
@@ -44,10 +45,10 @@ func NewDetailView() *DetailView {
 			dv.saveButton.Hide()
 		}
 	}
-	
-	buttonContainer := container.NewHBox(dv.saveButton)
+
+	buttonContainer := container.NewHBox(container.NewPadded(dv.saveButton))
 	dv.container = container.NewBorder(nil, buttonContainer, nil, nil, dv.textEntry)
-	
+
 	return dv
 }
 
@@ -57,7 +58,7 @@ func (dv *DetailView) GetWidget() *fyne.Container {
 
 func (dv *DetailView) ShowItem(item *models.ClipboardItem) {
 	dv.currentItem = item
-	
+
 	if item.Type == models.ClipImage {
 		dv.showImage(item)
 	} else {
@@ -80,10 +81,10 @@ func (dv *DetailView) showImage(item *models.ClipboardItem) {
 		img := canvas.NewImageFromResource(res)
 		img.FillMode = canvas.ImageFillContain
 		img.SetMinSize(fyne.NewSize(360, 260))
-		
+
 		timestamp := item.Timestamp.Format("2006-01-02 15:04:05")
 		dv.imageCard = widget.NewCard("Image", timestamp, img)
-		
+
 		dv.textEntry.Hide()
 		dv.container.Objects[0] = dv.imageCard
 		dv.container.Refresh()
