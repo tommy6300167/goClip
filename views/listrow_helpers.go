@@ -13,6 +13,7 @@ import (
 )
 
 type RowSubviews struct {
+	ContentIcon *components.ContentIcon
 	ContentText *canvas.Text
 	TimeText    *canvas.Text
 	DeleteBtn   *components.DeleteButton
@@ -25,24 +26,23 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 	}
 
 	rightContent, _ := c.Objects[0].(*fyne.Container)
+	contentIcon, _ := c.Objects[1].(*components.ContentIcon)
 	deleteBtn, _ := c.Objects[2].(*components.DeleteButton)
 
 	var ct, tt *canvas.Text
 	if rightContent != nil && len(rightContent.Objects) >= 1 {
 		if inner, ok := rightContent.Objects[0].(*fyne.Container); ok && len(inner.Objects) >= 3 {
-			// inner.Objects[0] = titlePad(*fyne.Container) -> [0]: *canvas.Text
 			if titlePad, ok := inner.Objects[0].(*fyne.Container); ok && len(titlePad.Objects) > 0 {
 				ct, _ = titlePad.Objects[0].(*canvas.Text)
 			}
-			// inner.Objects[2] = timePad(*fyne.Container) -> [0]: *canvas.Text
 			if timePad, ok := inner.Objects[2].(*fyne.Container); ok && len(timePad.Objects) > 0 {
 				tt, _ = timePad.Objects[0].(*canvas.Text)
 			}
 		}
 	}
 
-	ok = (ct != nil && tt != nil && deleteBtn != nil)
-	return RowSubviews{ContentText: ct, TimeText: tt, DeleteBtn: deleteBtn}, ok
+	ok = (contentIcon != nil && ct != nil && tt != nil && deleteBtn != nil)
+	return RowSubviews{ContentIcon: contentIcon, ContentText: ct, TimeText: tt, DeleteBtn: deleteBtn}, ok
 }
 func BindDeleteByLine(btn *components.DeleteButton, list binding.StringList, line string, onDelete func(int)) {
 	if btn == nil || onDelete == nil {
@@ -59,6 +59,11 @@ func BindDeleteByLine(btn *components.DeleteButton, list binding.StringList, lin
 	})
 }
 func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
+	// 設置圖標
+	if ui.ContentIcon != nil {
+		ui.ContentIcon.SetIsImage(rp.Kind == RowImage)
+	}
+
 	if ui.ContentText != nil {
 		// canvas.Text 沒內建截斷，用你的上限
 		if maxLen > 0 && utf8.RuneCountInString(rp.Title) > maxLen {

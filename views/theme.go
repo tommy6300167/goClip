@@ -26,7 +26,12 @@ func (t *CustomTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 }
 
 func (t *CustomTheme) Size(n fyne.ThemeSizeName) float32 {
-	return theme.DefaultTheme().Size(n)
+	switch n {
+	case theme.SizeNameInputRadius:
+		return 8.0 // Entry圓角半徑
+	default:
+		return theme.DefaultTheme().Size(n)
+	}
 }
 
 func (t *CustomTheme) Font(s fyne.TextStyle) fyne.Resource {

@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	DefaultMaxHistoryItems  = 30
-	DefaultMaxDisplayLength = 50
+	DefaultMaxHistoryItems  = 100
+	DefaultMaxDisplayLength = 30
 	DefaultPollingInterval  = 800
 )
 

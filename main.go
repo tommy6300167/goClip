@@ -33,6 +33,7 @@ func main() {
 
 	window := fyneApp.NewWindow("超吉貼")
 	window.Resize(fyne.NewSize(820, 520))
+	window.CenterOnScreen()
 
 	mainView := views.NewMainView(clipboardController, config)
 	mainView.Initialize(window)

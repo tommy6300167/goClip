@@ -54,6 +54,7 @@ func (mv *MainView) setupEventHandlers() {
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
 	mv.toolbar.SetOnExport(mv.onExportHistory)
+	mv.toolbar.SetOnSearch(mv.onSearchChanged)
 	mv.toolbar.SetOnStatusUpdate(mv.updateStatus)
 }
 
@@ -188,6 +189,15 @@ func (mv *MainView) onClearHistory() error {
 
 func (mv *MainView) onExportHistory() string {
 	return mv.clipboardController.ExportHistory()
+}
+
+func (mv *MainView) onSearchChanged(query string) {
+	mv.listView.SetSearchQuery(query)
+	if query == "" {
+		mv.updateStatus("顯示所有項目")
+	} else {
+		mv.updateStatus("搜尋: " + query)
+	}
 }
 
 func (mv *MainView) updateStatus(message string) {

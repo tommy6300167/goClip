@@ -2,6 +2,7 @@ package views
 
 import (
 	"image/color"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -17,15 +18,20 @@ import (
 type ListView struct {
 	list          *widget.List
 	historyData   binding.StringList
+	filteredData  binding.StringList
+	allItems      []string
 	config        *models.AppConfig
 	onSelected    func(int)
 	onDelete      func(int)
 	selectedIndex int
+	searchQuery   string
 }
 
 func NewListView(config *models.AppConfig) *ListView {
 	lv := &ListView{
 		historyData:   binding.NewStringList(),
+		filteredData:  binding.NewStringList(),
+		allItems:      []string{},
 		config:        config,
 		selectedIndex: -1,
 	}
@@ -102,7 +108,8 @@ func (lv *ListView) LoadFromHistory(items []*models.ClipboardItem) {
 			lines[i] = timestamp + "\t" + item.Content
 		}
 	}
-	lv.historyData.Set(lines)
+	lv.allItems = lines
+	lv.applySearch()
 	if len(lines) > 0 {
 		lv.SelectFirst()
 	}
@@ -116,11 +123,13 @@ func (lv *ListView) PrependItem(item *models.ClipboardItem) {
 	} else {
 		line = timestamp + "\t" + item.Content
 	}
-	lv.historyData.Prepend(line)
+	lv.allItems = append([]string{line}, lv.allItems...)
+	lv.applySearch()
 	lv.SelectFirst()
 }
 
 func (lv *ListView) Clear() {
+	lv.allItems = []string{}
 	lv.historyData.Set([]string{})
 	lv.selectedIndex = -1
 }
@@ -144,23 +153,82 @@ func (lv *ListView) GetSelectedItem() (string, bool) {
 }
 
 func (lv *ListView) RemoveItemAt(index int) {
-	items, _ := lv.historyData.Get()
-	if index < 0 || index >= len(items) {
+	displayedItems, _ := lv.historyData.Get()
+	if index < 0 || index >= len(displayedItems) {
 		return
 	}
-	newItems := append(items[:index], items[index+1:]...)
-	lv.historyData.Set(newItems)
-
-	if lv.selectedIndex >= index {
-		if lv.selectedIndex > 0 {
-			lv.selectedIndex--
-		} else if len(newItems) == 0 {
-			lv.selectedIndex = -1
+	
+	// 找到要刪除的項目
+	itemToRemove := displayedItems[index]
+	
+	// 從所有項目中移除
+	for i, item := range lv.allItems {
+		if item == itemToRemove {
+			lv.allItems = append(lv.allItems[:i], lv.allItems[i+1:]...)
+			break
 		}
 	}
-	if lv.selectedIndex >= 0 && lv.selectedIndex < len(newItems) {
-		lv.list.Select(lv.selectedIndex)
+	
+	// 重新應用搜尋
+	lv.applySearch()
+}
+
+// ---- 搜尋功能 ----
+
+// SetSearchQuery 設置搜尋查詢並過濾結果
+func (lv *ListView) SetSearchQuery(query string) {
+	lv.searchQuery = strings.TrimSpace(strings.ToLower(query))
+	lv.applySearch()
+}
+
+// GetSearchQuery 獲取當前搜尋查詢
+func (lv *ListView) GetSearchQuery() string {
+	return lv.searchQuery
+}
+
+// applySearch 應用搜尋過濾
+func (lv *ListView) applySearch() {
+	if lv.searchQuery == "" {
+		// 沒有搜尋查詢，顯示所有項目
+		lv.historyData.Set(lv.allItems)
 	} else {
-		lv.list.UnselectAll()
+		// 過濾項目
+		filtered := []string{}
+		for _, item := range lv.allItems {
+			if lv.matchesSearch(item) {
+				filtered = append(filtered, item)
+			}
+		}
+		lv.historyData.Set(filtered)
+	}
+	
+	// 重置選擇
+	lv.selectedIndex = -1
+	lv.list.UnselectAll()
+}
+
+// matchesSearch 檢查項目是否匹配搜尋查詢
+func (lv *ListView) matchesSearch(item string) bool {
+	if lv.searchQuery == "" {
+		return true
+	}
+	
+	// 解析項目內容
+	parts := strings.SplitN(item, "\t", 3)
+	if len(parts) < 2 {
+		return false
+	}
+	
+	searchLower := lv.searchQuery
+	
+	// 檢查內容
+	if len(parts) == 3 && parts[2] == "IMAGE" {
+		// 圖片項目：搜尋檔案名稱
+		filename := strings.ToLower(parts[1])
+		return strings.Contains(filename, searchLower)
+	} else {
+		// 文字項目：搜尋內容
+		content := strings.ToLower(parts[1])
+		return strings.Contains(content, searchLower)
 	}
 }
