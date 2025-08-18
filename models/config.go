@@ -8,7 +8,7 @@ import (
 const (
 	DefaultMaxHistoryItems  = 30
 	DefaultMaxDisplayLength = 50
-	DefaultPollingInterval  = 800 // milliseconds
+	DefaultPollingInterval  = 800
 )
 
 type AppConfig struct {
@@ -23,7 +23,7 @@ type AppConfig struct {
 func NewAppConfig() *AppConfig {
 	home, _ := os.UserHomeDir()
 	logDir := filepath.Join(home, "Library", "Application Support", "ClipMini")
-	
+
 	return &AppConfig{
 		MaxHistoryItems:  DefaultMaxHistoryItems,
 		MaxDisplayLength: DefaultMaxDisplayLength,

@@ -2,8 +2,11 @@ package utils
 
 import (
 	"strings"
+	"time"
 	"unicode/utf8"
 )
+
+const TimeLayout = "2006-01-02 15:04:05"
 
 func TruncateText(s string, max int) string {
 	s = strings.ReplaceAll(s, "\n", " ")
@@ -33,6 +36,22 @@ func CleanContent(s string) string {
 	return strings.TrimSpace(s)
 }
 
+func ParseTimeLocal(ts string, loc *time.Location) (time.Time, bool) {
+	t, err := time.Parse(TimeLayout, ts)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t.In(loc), true
+}
+
+func FormatTimeWithTag(t time.Time, tag string) string {
+	base := t.Format(TimeLayout)
+	if tag == "" {
+		return base
+	}
+	return base + " · " + tag
+}
+
 func Ellipsis(s string, max int) string {
 	if max <= 0 {
 		return ""
@@ -40,9 +59,10 @@ func Ellipsis(s string, max int) string {
 	if utf8.RuneCountInString(s) <= max {
 		return s
 	}
-	r := []rune(s)
+
+	runes := []rune(s)
 	if max == 1 {
 		return "…"
 	}
-	return string(r[:max-1]) + "…"
+	return string(runes[:max-1]) + "…"
 }

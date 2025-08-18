@@ -47,21 +47,19 @@ func (cc *ClipboardController) Initialize() error {
 
 func (cc *ClipboardController) PollClipboard() *models.ClipboardItem {
 	loc := utils.GetTaipeiLocation()
-	
-	// 首先檢查圖片
+
 	if cc.clipboardService.HasImageInClipboard() {
 		if b, err := cc.clipboardService.ReadClipboardImage(); err == nil && len(b) > 0 {
 			currentHash := cc.clipboardService.GetImageHash(b)
 			if currentHash != cc.lastImgHash {
 				cc.lastImgHash = currentHash
-				// 重置文字追蹤，因為現在是圖片
 				cc.lastText = ""
 				timestamp := utils.FormatTimestamp(time.Now(), loc)
-				
+
 				if path, err := cc.fileService.SaveImage(b, timestamp); err == nil {
 					item := models.NewImageItem(path)
 					item.Timestamp = time.Now()
-					
+
 					if err := cc.historyService.AddItem(item); err == nil {
 						cc.historyService.MaintainLimit()
 						return item
@@ -70,19 +68,16 @@ func (cc *ClipboardController) PollClipboard() *models.ClipboardItem {
 			}
 		}
 	} else {
-		// 沒有圖片時，重置圖片哈希
 		cc.lastImgHash = ""
 	}
 
-	// 然後檢查文字（無論是否有圖片都要檢查）
 	if txt, err := cc.clipboardService.ReadClipboardText(); err == nil {
 		normalized := strings.TrimSpace(txt)
 		if normalized != "" && normalized != cc.lastText {
 			cc.lastText = normalized
-			// 重置圖片追蹤，因為現在是文字
 			cc.lastImgHash = ""
 			item := models.NewTextItem(txt)
-			
+
 			if err := cc.historyService.AddItem(item); err == nil {
 				cc.historyService.MaintainLimit()
 				return item
@@ -129,17 +124,21 @@ func (cc *ClipboardController) ClearHistory() error {
 func (cc *ClipboardController) ExportHistory() string {
 	items := cc.historyService.GetItems()
 	lines := make([]string, len(items))
-	
+
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
 		timestamp := utils.FormatTimestamp(item.Timestamp, utils.GetTaipeiLocation())
-		
+
 		if item.Type == models.ClipImage {
 			lines[len(items)-1-i] = timestamp + "\t" + item.FilePath + "\t" + item.Type.String()
 		} else {
 			lines[len(items)-1-i] = timestamp + "\t" + item.Content
 		}
 	}
-	
+
 	return strings.Join(lines, "\n")
+}
+
+func (cc *ClipboardController) Count() int {
+	return len(cc.historyService.GetItems())
 }

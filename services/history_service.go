@@ -19,7 +19,7 @@ func NewHistoryService(config *models.AppConfig) *HistoryService {
 func (hs *HistoryService) LoadFromFile() error {
 	lines, err := hs.fileService.ReadHistoryLines()
 	if err != nil {
-		return nil // File might not exist yet, that's ok
+		return nil
 	}
 
 	hs.history.FromFileFormat(lines)
@@ -65,7 +65,6 @@ func (hs *HistoryService) UpdateItem(index int, newContent string) error {
 }
 
 func (hs *HistoryService) Clear() error {
-	// Clean up image files first
 	imagePaths := make([]string, 0)
 	for _, item := range hs.history.GetItems() {
 		if item.Type == models.ClipImage && item.FilePath != "" {
@@ -74,10 +73,8 @@ func (hs *HistoryService) Clear() error {
 	}
 	hs.fileService.CleanupImageFiles(imagePaths)
 
-	// Clear history
 	hs.history.Clear()
 
-	// Delete files
 	hs.fileService.DeleteHistoryFile()
 	hs.fileService.DeleteImageDirectory()
 
@@ -87,7 +84,6 @@ func (hs *HistoryService) Clear() error {
 func (hs *HistoryService) MaintainLimit() {
 	items := hs.history.GetItems()
 	if len(items) > hs.history.MaxItems {
-		// Clean up excess images
 		excessItems := items[hs.history.MaxItems:]
 		imagePaths := make([]string, 0)
 		for _, item := range excessItems {
@@ -97,7 +93,6 @@ func (hs *HistoryService) MaintainLimit() {
 		}
 		hs.fileService.CleanupImageFiles(imagePaths)
 
-		// Trim history
 		hs.history.Items = items[:hs.history.MaxItems]
 		hs.SaveToFile()
 	}

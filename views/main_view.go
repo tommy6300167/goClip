@@ -1,7 +1,10 @@
 package views
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
@@ -18,15 +21,17 @@ type MainView struct {
 	clipboardController *controllers.ClipboardController
 	config              *models.AppConfig
 	currentSelectedItem *models.ClipboardItem
+	selectedIndex       int
 }
 
 func NewMainView(clipboardController *controllers.ClipboardController, config *models.AppConfig) *MainView {
+
 	mv := &MainView{
 		clipboardController: clipboardController,
 		config:              config,
 	}
 
-	mv.statusLabel = widget.NewLabel("監看中… ⌘C 內容會自動記錄（文字＋圖片）")
+	mv.statusLabel = widget.NewLabel("⌘C 內容會自動記錄（文字＋圖片）")
 
 	return mv
 }
@@ -63,8 +68,10 @@ func (mv *MainView) buildLayout() {
 
 	split := container.NewHSplit(left, right)
 	split.SetOffset(0.35)
+	mainContent := container.NewBorder(mv.toolbar.GetWidget(), nil, nil, nil, split)
+	bg := canvas.NewRectangle(color.NRGBA{R: 33, G: 39, B: 44, A: 255})
 
-	mv.content = container.NewBorder(mv.toolbar.GetWidget(), nil, nil, nil, split)
+	mv.content = container.NewStack(bg, mainContent)
 }
 
 func (mv *MainView) GetContent() *fyne.Container {
@@ -72,29 +79,41 @@ func (mv *MainView) GetContent() *fyne.Container {
 }
 
 func (mv *MainView) onItemSelected(index int) {
+	mv.selectedIndex = index
 	item := mv.clipboardController.GetHistoryItem(index)
 	if item == nil {
 		return
 	}
-
 	mv.currentSelectedItem = item
 	mv.detailView.ShowItem(item)
 }
 
 func (mv *MainView) onDeleteItem(index int) {
-	err := mv.clipboardController.RemoveHistoryItem(index)
-	if err != nil {
+	if err := mv.clipboardController.RemoveHistoryItem(index); err != nil {
 		mv.updateStatus("刪除失敗: " + err.Error())
 		return
 	}
-
 	mv.listView.RemoveItemAt(index)
-	if mv.currentSelectedItem != nil {
-		item := mv.clipboardController.GetHistoryItem(index)
-		if item == nil {
-			mv.detailView.Clear()
-			mv.currentSelectedItem = nil
+
+	if mv.selectedIndex == index {
+		if index >= mv.clipboardController.Count() {
+			mv.selectedIndex = mv.clipboardController.Count() - 1
+		} else {
+			mv.selectedIndex = index
 		}
+	} else if mv.selectedIndex > index {
+		mv.selectedIndex--
+	}
+
+	if mv.selectedIndex >= 0 {
+		item := mv.clipboardController.GetHistoryItem(mv.selectedIndex)
+		mv.currentSelectedItem = item
+		mv.detailView.ShowItem(item)
+		mv.listView.GetWidget().Select(mv.selectedIndex)
+	} else {
+		mv.currentSelectedItem = nil
+		mv.detailView.Clear()
+		mv.listView.GetWidget().UnselectAll()
 	}
 
 	mv.updateStatus("項目已刪除")

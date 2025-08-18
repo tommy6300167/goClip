@@ -73,21 +73,6 @@ func (c *ContentIcon) SetIsImage(isImage bool) {
 	c.Refresh()
 }
 
-func (c *ContentIcon) SetSize(size fyne.Size) {
-	c.config.Size = size
-	c.Resize(size)
-}
-
-func (c *ContentIcon) SetIconColor(color color.Color) {
-	c.config.IconColor = color
-	c.Refresh()
-}
-
-func (c *ContentIcon) SetBackgroundColor(color color.Color) {
-	c.config.BackgroundColor = color
-	c.Refresh()
-}
-
 func (c *ContentIcon) GetConfig() ContentIconConfig {
 	return c.config
 }

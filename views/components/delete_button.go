@@ -28,13 +28,13 @@ type DeleteButtonConfig struct {
 }
 
 var DefaultDeleteButtonConfig = DeleteButtonConfig{
-	Size:            fyne.NewSize(24, 24), // 小顆
+	Size:            fyne.NewSize(24, 24),
 	IconColor:       color.NRGBA{255, 255, 255, 255},
-	BackgroundColor: color.NRGBA{200, 40, 30, 255}, // 不透明
+	BackgroundColor: color.NRGBA{200, 40, 30, 255},
 	HoverColor:      color.NRGBA{220, 50, 40, 255},
 	Shape:           "square",
 	CornerRadius:    6,
-	Padding:         2, // icon 與邊緣留一點
+	Padding:         2,
 	IconResource:    loadTrashcanIcon(),
 	IconText:        "🗑️",
 }
@@ -143,7 +143,7 @@ func (d *DeleteButton) MouseUp(_ *fyne.PointEvent) {
 type deleteButtonRenderer struct {
 	button     *DeleteButton
 	background fyne.CanvasObject
-	icon       fyne.CanvasObject // 可以是 *canvas.Text 或 *canvas.Image
+	icon       fyne.CanvasObject
 	objects    []fyne.CanvasObject
 }
 
@@ -161,13 +161,12 @@ func newDeleteButtonRenderer(button *DeleteButton) *deleteButtonRenderer {
 
 	var icon fyne.CanvasObject
 	if button.config.IconResource != nil {
-		// 使用圖片資源
 		img := canvas.NewImageFromResource(button.config.IconResource)
 		img.FillMode = canvas.ImageFillContain
 		img.SetMinSize(fyne.NewSize(float32(button.config.Size.Width)*0.6, float32(button.config.Size.Height)*0.6))
 		icon = img
 	} else {
-		// 使用文字圖示
+
 		textIcon := canvas.NewText(button.config.IconText, button.config.IconColor)
 		textIcon.Alignment = fyne.TextAlignCenter
 		textIcon.TextSize = float32(button.config.Size.Height) * 0.6
@@ -192,14 +191,11 @@ func (r *deleteButtonRenderer) Objects() []fyne.CanvasObject {
 func (r *deleteButtonRenderer) Destroy() {}
 
 func (r *deleteButtonRenderer) Layout(alloc fyne.Size) {
-	// 目標顯示尺寸 = config.Size（固定顯示這麼大）
 	target := r.button.config.Size
 
-	// 在外部分配的空間 alloc 中「置中」顯示 target
 	px := (alloc.Width - target.Width) / 2
 	py := (alloc.Height - target.Height) / 2
 
-	// 背景大小與位置
 	switch bg := r.background.(type) {
 	case *canvas.Circle:
 		bg.Resize(target)
@@ -207,11 +203,9 @@ func (r *deleteButtonRenderer) Layout(alloc fyne.Size) {
 	case *canvas.Rectangle:
 		bg.Resize(target)
 		bg.Move(fyne.NewPos(px, py))
-		// 圓角（square 也可以搭配 CornerRadius>0）
 		bg.CornerRadius = r.button.config.CornerRadius
 	}
 
-	// icon 框（在 target 內再扣掉 padding）
 	p := r.button.config.Padding
 	iconW := target.Width - p*2
 	iconH := target.Height - p*2
@@ -224,19 +218,16 @@ func (r *deleteButtonRenderer) Layout(alloc fyne.Size) {
 	iconSize := fyne.NewSize(iconW, iconH)
 	iconPos := fyne.NewPos(px+p, py+p)
 
-	// 調整 icon 尺寸與位置
 	if img, ok := r.icon.(*canvas.Image); ok {
 		img.FillMode = canvas.ImageFillContain
 		img.Resize(iconSize)
 		img.Move(iconPos)
 	} else if txt, ok := r.icon.(*canvas.Text); ok {
-		// 依高度設定字級，並讓文字容器鋪滿 target（靠 Alignment 置中）
 		txt.TextSize = iconH * 0.8
 		txt.Alignment = fyne.TextAlignCenter
 		txt.Resize(target)
 		txt.Move(fyne.NewPos(px, py))
 	} else {
-		// 其他型別就用 iconSize
 		r.icon.Resize(iconSize)
 		r.icon.Move(iconPos)
 	}

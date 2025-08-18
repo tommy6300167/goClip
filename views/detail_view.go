@@ -27,7 +27,7 @@ func NewDetailView() *DetailView {
 		textEntry: widget.NewMultiLineEntry(),
 	}
 
-	dv.textEntry.SetPlaceHolder("左側選一筆來預覽內容")
+	dv.textEntry.SetPlaceHolder("未選取任何項目")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
 
 	dv.saveButton = widget.NewButtonWithIcon("保存", theme.DocumentSaveIcon(), func() {
