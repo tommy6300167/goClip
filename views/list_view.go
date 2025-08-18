@@ -34,19 +34,23 @@ func NewListView(config *models.AppConfig) *ListView {
 		lv.historyData,
 		func() fyne.CanvasObject {
 			contentIcon := components.NewContentIcon(false)
-			contentLabel := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-			contentLabel.Wrapping = fyne.TextWrapOff
-			contentLabel.Truncation = fyne.TextTruncateEllipsis
-			titlePad := container.NewPadded(contentLabel)
+
+			contentText := canvas.NewText("", color.NRGBA{0xEE, 0xEE, 0xEE, 0xFF})
+			contentText.TextStyle = fyne.TextStyle{Bold: true}
+			contentText.Alignment = fyne.TextAlignLeading
+			titlePad := container.NewPadded(contentText)
+
 			timeText := canvas.NewText("", color.NRGBA{0xB0, 0xB0, 0xB0, 0xFF})
 			timeText.TextSize = 12
 			timeText.Alignment = fyne.TextAlignLeading
 			timePad := container.NewPadded(timeText)
+
 			gap := canvas.NewRectangle(color.Transparent)
 			gap.SetMinSize(fyne.NewSize(1, 2))
 
 			rightInner := container.NewVBox(titlePad, gap, timePad)
 			rightContent := container.NewPadded(rightInner)
+
 			deleteBtn := components.NewDeleteButton()
 			return container.NewBorder(nil, nil, contentIcon, deleteBtn, rightContent)
 		},
@@ -56,10 +60,12 @@ func NewListView(config *models.AppConfig) *ListView {
 			if !ok {
 				return
 			}
-			loc := utils.GetTaipeiLocation()
 
+			loc := utils.GetTaipeiLocation()
 			rp := ParseHistoryLine(line, lv.config.MaxDisplayLength, loc)
-			ApplyRow(ui, rp, loc)
+
+			ApplyRow(ui, rp, lv.config.MaxDisplayLength, loc)
+
 			BindDeleteByLine(ui.DeleteBtn, lv.historyData, line, func(idx int) {
 				if lv.onDelete != nil {
 					lv.onDelete(idx)
