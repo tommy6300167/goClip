@@ -2,15 +2,12 @@ package views
 
 import (
 	"image/color"
-	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"clipmini/controllers"
 	"clipmini/views/components"
@@ -21,7 +18,7 @@ type Toolbar struct {
 	copyBtn             *components.PillButton
 	clearBtn            *components.PillButton
 	exportBtn           *components.PillButton
-	searchEntry         *widget.Entry
+	searchInput         *components.SearchInput
 	clipboardController *controllers.ClipboardController
 	onCopy              func() error
 	onClear             func() error
@@ -37,66 +34,35 @@ func NewToolbar(window fyne.Window, clipboardController *controllers.ClipboardCo
 		window:              window,
 	}
 
-	// 按鈕統一高度，和搜尋同高
 	neutral := components.DefaultPillStyle
 	neutral.Size = fyne.NewSize(88, 36)
 
-	accent := neutral
-	accent.Bg = color.NRGBA{86, 212, 194, 255}
-	accent.BgHover = color.NRGBA{78, 190, 174, 255}
-	accent.Fg = color.NRGBA{15, 23, 28, 255}
+	transparent := neutral
+	transparent.Bg = color.NRGBA{0, 0, 0, 0}
+	transparent.BgHover = color.NRGBA{255, 255, 255, 20}
 
-	tb.copyBtn = components.NewPillButtonWithStyle("Copy", theme.ContentCopyIcon(), tb.handleCopy, neutral)
-	tb.clearBtn = components.NewPillButtonWithStyle("Clear", theme.DeleteIcon(), tb.handleClear, neutral)
+	accent := neutral
+	accent.Bg = color.NRGBA{45, 150, 135, 255}      // 更深的藍綠色
+	accent.BgHover = color.NRGBA{35, 130, 118, 255}  // 更深的 hover 效果
+	accent.Fg = color.NRGBA{255, 255, 255, 255}      // 白色文字確保對比度
+
+	tb.copyBtn = components.NewPillButtonWithStyle("Copy", theme.ContentCopyIcon(), tb.handleCopy, transparent)
+	tb.clearBtn = components.NewPillButtonWithStyle("Clear", theme.DeleteIcon(), tb.handleClear, transparent)
 	tb.exportBtn = components.NewPillButtonWithStyle("Export", theme.DocumentSaveIcon(), tb.handleExport, accent)
 
-	tb.searchEntry = widget.NewEntry()
-	tb.searchEntry.SetPlaceHolder("搜尋剪貼簿內容...")
-
-	searchIcon := widget.NewIcon(theme.SearchIcon())
-	clearBtn := widget.NewButtonWithIcon("", theme.ContentClearIcon(), func() {
-		tb.searchEntry.SetText("")
+	tb.searchInput = components.NewSearchInput()
+	tb.searchInput.SetOnChanged(func(text string) {
 		if tb.onSearch != nil {
-			tb.onSearch("")
+			tb.onSearch(text)
 		}
 	})
-	clearBtn.Importance = widget.LowImportance
-	clearBtn.Hide()
-
-	tb.searchEntry.OnChanged = func(text string) {
-		t := strings.TrimSpace(text)
-		if t == "" {
-			clearBtn.Hide()
-		} else {
-			clearBtn.Show()
-		}
-		if tb.onSearch != nil {
-			tb.onSearch(t)
-		}
-	}
-
-	searchBg := canvas.NewRectangle(color.NRGBA{45, 55, 65, 255})
-	searchBg.CornerRadius = 8
-
-	iconBox := container.NewCenter(searchIcon)
-	clearBox := container.NewCenter(clearBtn)
-	entryBox := container.NewStack(tb.searchEntry)
-
-	searchInner := container.NewBorder(nil, nil, iconBox, clearBox, entryBox)
-	searchWrapper := container.NewStack(searchBg, searchInner)
-
-	fixedSearch := container.New(layout.NewGridWrapLayout(fyne.NewSize(200, 36)), searchWrapper)
-	searchWithMargin := container.NewVBox(
-		layout.NewSpacer(),
-		fixedSearch,
-	)
 
 	tb.container = container.NewHBox(
 		container.NewPadded(tb.clearBtn),
 		container.NewPadded(tb.copyBtn),
 		container.NewPadded(tb.exportBtn),
 		layout.NewSpacer(),
-		searchWithMargin,
+		tb.searchInput.GetWidget(),
 	)
 
 	return tb

@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -92,10 +93,12 @@ func (p *PillButton) Tapped(*fyne.PointEvent) {
 		p.OnTapped()
 	}
 }
-func (p *PillButton) MouseIn(*fyne.PointEvent)   { p.hover = true; p.refreshBg() }
-func (p *PillButton) MouseOut()                  { p.hover = false; p.refreshBg() }
-func (p *PillButton) MouseDown(*fyne.PointEvent) { p.press = true; p.refreshBg() }
-func (p *PillButton) MouseUp(*fyne.PointEvent)   { p.press = false; p.refreshBg() }
+func (p *PillButton) MouseIn(*desktop.MouseEvent)    { p.hover = true; p.refreshBg() }
+func (p *PillButton) MouseMoved(*desktop.MouseEvent) {}
+func (p *PillButton) MouseOut()                      { p.hover = false; p.refreshBg() }
+
+func (p *PillButton) MouseDown(*desktop.MouseEvent) { p.press = true; p.refreshBg() }
+func (p *PillButton) MouseUp(*desktop.MouseEvent)   { p.press = false; p.refreshBg() }
 
 func (p *PillButton) refreshBg() {
 	col := p.style.Bg

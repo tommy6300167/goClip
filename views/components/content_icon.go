@@ -37,8 +37,8 @@ type ContentIconConfig struct {
 
 var DefaultContentIconConfig = ContentIconConfig{
 	Size:              fyne.NewSize(20, 20),
-	IconColor:         color.NRGBA{R: 0, G: 0, B: 0, A: 255},
-	BackgroundColor:   color.NRGBA{R: 240, G: 240, B: 240, A: 255},
+	IconColor:         color.NRGBA{R: 255, G: 255, B: 255, A: 255}, // 白色圖示
+	BackgroundColor:   color.NRGBA{R: 0, G: 0, B: 0, A: 0},         // 完全透明背景
 	Shape:             "square",
 	CornerRadius:      6.0,
 	Padding:           2.0,

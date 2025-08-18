@@ -8,11 +8,11 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"clipmini/models"
 	"clipmini/utils"
-	"clipmini/views/components"
 )
 
 type ListView struct {
@@ -39,7 +39,7 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list = widget.NewListWithData(
 		lv.historyData,
 		func() fyne.CanvasObject {
-			contentIcon := components.NewContentIcon(false)
+			contentIcon := widget.NewIcon(theme.FileTextIcon())
 
 			contentText := canvas.NewText("", color.NRGBA{0xEE, 0xEE, 0xEE, 0xFF})
 			contentText.TextStyle = fyne.TextStyle{Bold: true}
@@ -57,7 +57,8 @@ func NewListView(config *models.AppConfig) *ListView {
 			rightInner := container.NewVBox(titlePad, gap, timePad)
 			rightContent := container.NewPadded(rightInner)
 
-			deleteBtn := components.NewDeleteButton()
+			deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
+			deleteBtn.Importance = widget.LowImportance
 			return container.NewBorder(nil, nil, contentIcon, deleteBtn, rightContent)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {

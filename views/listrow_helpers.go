@@ -7,16 +7,17 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	u "clipmini/utils"
-	"clipmini/views/components"
 )
 
 type RowSubviews struct {
-	ContentIcon *components.ContentIcon
+	ContentIcon *widget.Icon
 	ContentText *canvas.Text
 	TimeText    *canvas.Text
-	DeleteBtn   *components.DeleteButton
+	DeleteBtn   *widget.Button
 }
 
 func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
@@ -26,8 +27,8 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 	}
 
 	rightContent, _ := c.Objects[0].(*fyne.Container)
-	contentIcon, _ := c.Objects[1].(*components.ContentIcon)
-	deleteBtn, _ := c.Objects[2].(*components.DeleteButton)
+	contentIcon, _ := c.Objects[1].(*widget.Icon)
+	deleteBtn, _ := c.Objects[2].(*widget.Button)
 
 	var ct, tt *canvas.Text
 	if rightContent != nil && len(rightContent.Objects) >= 1 {
@@ -44,11 +45,11 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 	ok = (contentIcon != nil && ct != nil && tt != nil && deleteBtn != nil)
 	return RowSubviews{ContentIcon: contentIcon, ContentText: ct, TimeText: tt, DeleteBtn: deleteBtn}, ok
 }
-func BindDeleteByLine(btn *components.DeleteButton, list binding.StringList, line string, onDelete func(int)) {
+func BindDeleteByLine(btn *widget.Button, list binding.StringList, line string, onDelete func(int)) {
 	if btn == nil || onDelete == nil {
 		return
 	}
-	btn.SetOnTapped(func() {
+	btn.OnTapped = func() {
 		items, _ := list.Get()
 		for i, it := range items {
 			if it == line {
@@ -56,16 +57,19 @@ func BindDeleteByLine(btn *components.DeleteButton, list binding.StringList, lin
 				return
 			}
 		}
-	})
+	}
 }
 func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
-	// 設置圖標
 	if ui.ContentIcon != nil {
-		ui.ContentIcon.SetIsImage(rp.Kind == RowImage)
+		if rp.Kind == RowImage {
+			ui.ContentIcon.SetResource(theme.FileImageIcon())
+		} else {
+			ui.ContentIcon.SetResource(theme.FileTextIcon())
+		}
+		ui.ContentIcon.Refresh()
 	}
 
 	if ui.ContentText != nil {
-		// canvas.Text 沒內建截斷，用你的上限
 		if maxLen > 0 && utf8.RuneCountInString(rp.Title) > maxLen {
 			runes := []rune(rp.Title)
 			if maxLen == 1 {
