@@ -28,15 +28,15 @@ type DeleteButtonConfig struct {
 }
 
 var DefaultDeleteButtonConfig = DeleteButtonConfig{
-	Size:            fyne.NewSize(40, 40),
-	IconColor:       color.NRGBA{R: 255, G: 255, B: 255, A: 255}, // 白色圖示
-	BackgroundColor: color.NRGBA{R: 200, G: 40, B: 30, A: 180},   // 深色紅色背景
-	HoverColor:      color.NRGBA{R: 220, G: 50, B: 40, A: 220},   // hover 時更深
+	Size:            fyne.NewSize(24, 24), // 小顆
+	IconColor:       color.NRGBA{255, 255, 255, 255},
+	BackgroundColor: color.NRGBA{200, 40, 30, 255}, // 不透明
+	HoverColor:      color.NRGBA{220, 50, 40, 255},
 	Shape:           "square",
-	CornerRadius:    8.0,
-	Padding:         4.0,
-	IconResource:    loadTrashcanIcon(), // 載入垃圾桶圖示
-	IconText:        "🗑️",               // 備用文字圖示
+	CornerRadius:    6,
+	Padding:         2, // icon 與邊緣留一點
+	IconResource:    loadTrashcanIcon(),
+	IconText:        "🗑️",
 }
 
 type DeleteButton struct {
@@ -191,43 +191,81 @@ func (r *deleteButtonRenderer) Objects() []fyne.CanvasObject {
 
 func (r *deleteButtonRenderer) Destroy() {}
 
-func (r *deleteButtonRenderer) Layout(size fyne.Size) {
-	padding := r.button.config.Padding
-	bgSize := fyne.NewSize(size.Width-padding*2, size.Height-padding*2)
-	bgPos := fyne.NewPos(padding, padding)
+func (r *deleteButtonRenderer) Layout(alloc fyne.Size) {
+	// 目標顯示尺寸 = config.Size（固定顯示這麼大）
+	target := r.button.config.Size
 
-	r.background.Resize(bgSize)
-	r.background.Move(bgPos)
+	// 在外部分配的空間 alloc 中「置中」顯示 target
+	px := (alloc.Width - target.Width) / 2
+	py := (alloc.Height - target.Height) / 2
 
-	r.icon.Resize(size)
-	r.icon.Move(fyne.NewPos(0, 0))
+	// 背景大小與位置
+	switch bg := r.background.(type) {
+	case *canvas.Circle:
+		bg.Resize(target)
+		bg.Move(fyne.NewPos(px, py))
+	case *canvas.Rectangle:
+		bg.Resize(target)
+		bg.Move(fyne.NewPos(px, py))
+		// 圓角（square 也可以搭配 CornerRadius>0）
+		bg.CornerRadius = r.button.config.CornerRadius
+	}
+
+	// icon 框（在 target 內再扣掉 padding）
+	p := r.button.config.Padding
+	iconW := target.Width - p*2
+	iconH := target.Height - p*2
+	if iconW < 1 {
+		iconW = 1
+	}
+	if iconH < 1 {
+		iconH = 1
+	}
+	iconSize := fyne.NewSize(iconW, iconH)
+	iconPos := fyne.NewPos(px+p, py+p)
+
+	// 調整 icon 尺寸與位置
+	if img, ok := r.icon.(*canvas.Image); ok {
+		img.FillMode = canvas.ImageFillContain
+		img.Resize(iconSize)
+		img.Move(iconPos)
+	} else if txt, ok := r.icon.(*canvas.Text); ok {
+		// 依高度設定字級，並讓文字容器鋪滿 target（靠 Alignment 置中）
+		txt.TextSize = iconH * 0.8
+		txt.Alignment = fyne.TextAlignCenter
+		txt.Resize(target)
+		txt.Move(fyne.NewPos(px, py))
+	} else {
+		// 其他型別就用 iconSize
+		r.icon.Resize(iconSize)
+		r.icon.Move(iconPos)
+	}
 }
-
 func (r *deleteButtonRenderer) MinSize() fyne.Size {
 	return r.button.config.Size
 }
 
 func (r *deleteButtonRenderer) Refresh() {
+	bgCol := r.button.config.BackgroundColor
 	if r.button.hovered {
-		if circle, ok := r.background.(*canvas.Circle); ok {
-			circle.FillColor = r.button.config.HoverColor
-		} else if rect, ok := r.background.(*canvas.Rectangle); ok {
-			rect.FillColor = r.button.config.HoverColor
-		}
-	} else {
-		if circle, ok := r.background.(*canvas.Circle); ok {
-			circle.FillColor = r.button.config.BackgroundColor
-		} else if rect, ok := r.background.(*canvas.Rectangle); ok {
-			rect.FillColor = r.button.config.BackgroundColor
-		}
+		bgCol = r.button.config.HoverColor
 	}
 
-	// 更新圖示
-	if textIcon, ok := r.icon.(*canvas.Text); ok {
-		textIcon.Color = r.button.config.IconColor
-		textIcon.TextSize = float32(r.button.config.Size.Height) * 0.6
+	if c, ok := r.background.(*canvas.Circle); ok {
+		c.FillColor = bgCol
+		c.Refresh()
+	}
+	if rect, ok := r.background.(*canvas.Rectangle); ok {
+		rect.FillColor = bgCol
+		rect.CornerRadius = r.button.config.CornerRadius
+		rect.Refresh()
 	}
 
-	r.background.Refresh()
-	r.icon.Refresh()
+	if txt, ok := r.icon.(*canvas.Text); ok {
+		txt.Color = r.button.config.IconColor
+		txt.Refresh()
+	}
+	if img, ok := r.icon.(*canvas.Image); ok {
+		img.Refresh()
+	}
 }

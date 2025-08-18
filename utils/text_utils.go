@@ -2,6 +2,7 @@ package utils
 
 import (
 	"strings"
+	"unicode/utf8"
 )
 
 func TruncateText(s string, max int) string {
@@ -22,4 +23,26 @@ func ReverseSlice(ss []string) []string {
 		out[n-1-i] = ss[i]
 	}
 	return out
+}
+
+func CleanContent(s string) string {
+	s = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ").Replace(s)
+	for strings.Contains(s, "  ") {
+		s = strings.ReplaceAll(s, "  ", " ")
+	}
+	return strings.TrimSpace(s)
+}
+
+func Ellipsis(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+	r := []rune(s)
+	if max == 1 {
+		return "…"
+	}
+	return string(r[:max-1]) + "…"
 }

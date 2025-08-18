@@ -37,8 +37,7 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list = widget.NewListWithData(
 		lv.historyData,
 		func() fyne.CanvasObject {
-			iconLabel := widget.NewLabelWithStyle("📄", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-			iconLabel.Resize(fyne.NewSize(40, 40))
+			contentIcon := components.NewContentIcon(false)
 
 			contentLabel := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			contentLabel.Wrapping = fyne.TextWrapOff
@@ -55,7 +54,7 @@ func NewListView(config *models.AppConfig) *ListView {
 
 			deleteBtn := components.NewDeleteButton()
 
-			return container.NewBorder(nil, nil, iconLabel, deleteBtn, rightContent)
+			return container.NewBorder(nil, nil, contentIcon, deleteBtn, rightContent)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			str, _ := di.(binding.String).Get()
@@ -64,7 +63,6 @@ func NewListView(config *models.AppConfig) *ListView {
 			containerObj := co.(*fyne.Container)
 
 			var (
-				iconLabel    *widget.Label
 				deleteBtn    *components.DeleteButton
 				rightContent *fyne.Container
 				contentLabel *widget.Label
@@ -72,9 +70,8 @@ func NewListView(config *models.AppConfig) *ListView {
 			)
 
 			if len(containerObj.Objects) >= 3 {
-				rightContent, _ = containerObj.Objects[0].(*fyne.Container) // center (Padded)
-				iconLabel, _ = containerObj.Objects[1].(*widget.Label)      // left
-				deleteBtn, _ = containerObj.Objects[2].(*components.DeleteButton) // right
+				rightContent, _ = containerObj.Objects[0].(*fyne.Container)
+				deleteBtn, _ = containerObj.Objects[2].(*components.DeleteButton)
 
 				if rightContent != nil && len(rightContent.Objects) >= 1 {
 					if inner, ok := rightContent.Objects[0].(*fyne.Container); ok && len(inner.Objects) >= 3 {
@@ -98,14 +95,6 @@ func NewListView(config *models.AppConfig) *ListView {
 						lv.onDelete(currentIndex)
 					}
 				})
-			}
-
-			if iconLabel != nil {
-				if len(parts) == 3 && parts[2] == "IMAGE" {
-					iconLabel.SetText("🖼️")
-				} else {
-					iconLabel.SetText("📄")
-				}
 			}
 
 			if contentLabel != nil && timeText != nil {
