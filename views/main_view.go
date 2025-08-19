@@ -31,7 +31,7 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		config:              config,
 	}
 
-	mv.statusLabel = widget.NewLabel("⌘C 會自動記錄")
+	mv.statusLabel = widget.NewLabel("⌘C Auto saving")
 
 	return mv
 }
@@ -50,6 +50,7 @@ func (mv *MainView) setupEventHandlers() {
 	mv.listView.SetOnSelected(mv.onItemSelected)
 	mv.listView.SetOnDelete(mv.onDeleteItem)
 	mv.detailView.SetOnSave(mv.onSaveItem)
+	mv.detailView.SetOnStatusUpdate(mv.updateStatus)
 
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
@@ -171,7 +172,7 @@ func (mv *MainView) onCopyToClipboard() error {
 		if text == "" {
 			text = mv.currentSelectedItem.Content
 		}
-		
+
 		return mv.clipboardController.CopyItemToClipboard(&models.ClipboardItem{
 			Type:    models.ClipText,
 			Content: text,

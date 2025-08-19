@@ -11,31 +11,30 @@ import (
 )
 
 type DetailView struct {
-	container    *fyne.Container
-	textEntry    *widget.Entry
-	richText     *widget.RichText
-	imageCard    *widget.Card
-	saveButton   *widget.Button
-	editButton   *widget.Button
-	currentItem  *models.ClipboardItem
-	onSave       func(string)
-	originalText string
-	isEditing    bool
+	container      *fyne.Container
+	textEntry      *CustomEntry
+	richText       *widget.RichText
+	imageCard      *widget.Card
+	saveButton     *widget.Button
+	editButton     *widget.Button
+	currentItem    *models.ClipboardItem
+	onSave         func(string)
+	onStatusUpdate func(string)
+	originalText   string
+	isEditing      bool
 }
 
 func NewDetailView() *DetailView {
 	dv := &DetailView{
-		textEntry: widget.NewEntry(),
+		textEntry: NewCustomEntry(),
 		richText:  widget.NewRichText(),
 		isEditing: false,
 	}
 
 	dv.textEntry.SetPlaceHolder("未選取任何項目")
-	dv.textEntry.Wrapping = fyne.TextWrapWord
-	dv.textEntry.MultiLine = false
 	dv.textEntry.Hide()
 
-	dv.richText.Wrapping = fyne.TextWrapWord
+	dv.richText.Wrapping = fyne.TextWrapOff
 	dv.richText.Scroll = container.ScrollBoth
 
 	dv.saveButton = widget.NewButtonWithIcon("Save", theme.DocumentSaveIcon(), func() {
@@ -44,6 +43,9 @@ func NewDetailView() *DetailView {
 		}
 		dv.isEditing = false
 		dv.showAsRichText()
+		if dv.onStatusUpdate != nil {
+			dv.onStatusUpdate("⌘C 會自動記錄")
+		}
 	})
 	dv.saveButton.Importance = widget.HighImportance
 	dv.saveButton.Hide()
@@ -51,6 +53,9 @@ func NewDetailView() *DetailView {
 	dv.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
 		dv.isEditing = true
 		dv.showAsTextEntry()
+		if dv.onStatusUpdate != nil {
+			dv.onStatusUpdate("Use Shift + Enter to add a line break.")
+		}
 	})
 
 	dv.textEntry.OnChanged = func(text string) {
@@ -60,6 +65,8 @@ func NewDetailView() *DetailView {
 			dv.saveButton.Hide()
 		}
 	}
+
+	dv.textEntry.SetPreventEnterNewline(true)
 
 	buttonContainer := container.NewHBox(
 		container.NewPadded(dv.editButton),
@@ -102,6 +109,9 @@ func (dv *DetailView) showAsRichText() {
 	dv.saveButton.Hide()
 	dv.editButton.Show()
 	dv.container.Refresh()
+	if dv.onStatusUpdate != nil {
+		dv.onStatusUpdate("⌘C Auto saving")
+	}
 }
 
 func (dv *DetailView) showAsTextEntry() {
@@ -175,4 +185,8 @@ func (dv *DetailView) GetCurrentItem() *models.ClipboardItem {
 
 func (dv *DetailView) SetOnSave(callback func(string)) {
 	dv.onSave = callback
+}
+
+func (dv *DetailView) SetOnStatusUpdate(callback func(string)) {
+	dv.onStatusUpdate = callback
 }
