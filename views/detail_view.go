@@ -31,7 +31,7 @@ func NewDetailView() *DetailView {
 		isEditing: false,
 	}
 
-	dv.textEntry.SetPlaceHolder("未選取任何項目")
+	dv.textEntry.SetPlaceHolder("No item selected")
 	dv.textEntry.Hide()
 
 	dv.richText.Wrapping = fyne.TextWrapOff
@@ -44,13 +44,16 @@ func NewDetailView() *DetailView {
 		dv.isEditing = false
 		dv.showAsRichText()
 		if dv.onStatusUpdate != nil {
-			dv.onStatusUpdate("⌘C Auto saving")
+			dv.onStatusUpdate("Press ⌘C Auto saving")
 		}
 	})
 	dv.saveButton.Importance = widget.HighImportance
 	dv.saveButton.Hide()
 
 	dv.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
+		if dv.currentItem == nil || dv.currentItem.Type != models.ClipText {
+			return
+		}
 		dv.isEditing = true
 		dv.showAsTextEntry()
 		dv.saveButton.Show()
@@ -66,6 +69,9 @@ func NewDetailView() *DetailView {
 	}
 
 	dv.textEntry.SetPreventEnterNewline(true)
+
+	// 初始狀態下禁用 Edit 按鈕
+	dv.editButton.Disable()
 
 	buttonContainer := container.NewHBox(
 		container.NewPadded(dv.editButton),
@@ -96,6 +102,7 @@ func (dv *DetailView) showText(item *models.ClipboardItem) {
 	dv.richText.ParseMarkdown("```\n" + item.Content + "\n```")
 	dv.saveButton.Hide()
 	dv.editButton.Show()
+	dv.editButton.Enable()
 	dv.imageCard = nil
 	dv.isEditing = false
 	dv.showAsRichText()
@@ -109,7 +116,7 @@ func (dv *DetailView) showAsRichText() {
 	dv.editButton.Show()
 	dv.container.Refresh()
 	if dv.onStatusUpdate != nil {
-		dv.onStatusUpdate("⌘C Auto saving")
+		dv.onStatusUpdate("Press ⌘C Auto saving")
 	}
 }
 
@@ -163,6 +170,7 @@ func (dv *DetailView) Clear() {
 	dv.textEntry.Show()
 	dv.saveButton.Hide()
 	dv.editButton.Hide()
+	dv.editButton.Disable()
 	dv.imageCard = nil
 	dv.currentItem = nil
 	dv.originalText = ""

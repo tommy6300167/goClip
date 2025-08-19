@@ -31,7 +31,7 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		config:              config,
 	}
 
-	mv.statusLabel = widget.NewLabel("⌘C Auto saving")
+	mv.statusLabel = widget.NewLabel("Press ⌘C Auto saving")
 
 	return mv
 }

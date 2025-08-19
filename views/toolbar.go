@@ -95,24 +95,24 @@ func (tb *Toolbar) SetOnStatusUpdate(callback func(string)) {
 func (tb *Toolbar) handleCopy() {
 	if tb.onCopy != nil {
 		if err := tb.onCopy(); err != nil {
-			tb.updateStatus("複製失敗")
+			tb.updateStatus("Failed to copy")
 		} else {
-			tb.updateStatus("已複製到剪貼簿")
+			tb.updateStatus("Copyed")
 		}
 	}
 }
 
 func (tb *Toolbar) handleClear() {
-	dialog.ShowConfirm("清空", "確定要清空歷史？（會刪除已存圖片）", func(ok bool) {
+	dialog.ShowConfirm("Clear", "Confirm clearing history? ", func(ok bool) {
 		if !ok {
 			return
 		}
 
 		if tb.onClear != nil {
 			if err := tb.onClear(); err != nil {
-				tb.updateStatus("清空失敗")
+				tb.updateStatus("Failed to clear")
 			} else {
-				tb.updateStatus("已清空")
+				tb.updateStatus("Cleared")
 			}
 		}
 	}, tb.window)
@@ -128,7 +128,7 @@ func (tb *Toolbar) handleExport() {
 		if tb.onExport != nil {
 			content := tb.onExport()
 			uc.Write([]byte(content))
-			tb.updateStatus("已匯出")
+			tb.updateStatus("Export successful")
 		}
 	}, tb.window)
 

@@ -33,22 +33,22 @@ func (ad *AuthDialog) Show() {
 	ad.keyEntry = widget.NewPasswordEntry()
 	ad.keyEntry.SetPlaceHolder("Press")
 
-	title := widget.NewLabel("首次使用需要驗證")
+	title := widget.NewLabel("Verification is required on first use")
 	title.Alignment = fyne.TextAlignCenter
 
-	description := widget.NewLabel("請輸入您的金鑰以開始使用超吉貼")
+	description := widget.NewLabel("Please enter your key to start using SuperClip")
 	description.Alignment = fyne.TextAlignCenter
 
-	confirmButton := widget.NewButton("確認", func() {
+	confirmButton := widget.NewButton("Confirm", func() {
 		key := ad.keyEntry.Text
 		if ad.onAuth != nil && ad.onAuth(key) {
 			ad.dialogWidget.Hide()
 		} else {
-			ad.showError("金鑰錯誤，請重新輸入")
+			ad.showError("nvalid key. Please try again.")
 		}
 	})
 
-	cancelButton := widget.NewButton("取消", func() {
+	cancelButton := widget.NewButton("Cancel", func() {
 		if ad.onCancel != nil {
 			ad.onCancel()
 		}
@@ -69,7 +69,7 @@ func (ad *AuthDialog) Show() {
 		buttons,
 	)
 
-	ad.dialogWidget = dialog.NewCustom("金鑰驗證", "", content, ad.window)
+	ad.dialogWidget = dialog.NewCustomWithoutButtons("Key Verification", content, ad.window)
 	ad.dialogWidget.Resize(fyne.NewSize(350, 200))
 	ad.dialogWidget.Show()
 
