@@ -1,4 +1,4 @@
-package views
+package dialogs
 
 import (
 	"fyne.io/fyne/v2"

@@ -1,4 +1,4 @@
-package components
+package buttons
 
 import (
 	"image/color"

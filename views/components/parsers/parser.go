@@ -1,4 +1,4 @@
-package views
+package parsers
 
 import (
 	"path/filepath"
@@ -6,31 +6,15 @@ import (
 	"time"
 
 	"clipmini/utils"
-	u "clipmini/utils"
 )
 
-type RowKind int
-
-const (
-	RowText RowKind = iota
-	RowImage
-)
-
-type RowParsed struct {
-	RawLine string
-	Kind    RowKind
-	Title   string
-	Tag     string
-	Time    time.Time
-	RawTime string
-}
-
+// ParseHistoryLine 解析歷史記錄行
 func ParseHistoryLine(line string, maxLen int, loc *time.Location) RowParsed {
 	r := RowParsed{RawLine: line}
 
 	first := strings.SplitN(line, "\t", 2)
 	if len(first) > 0 {
-		if t, ok := u.ParseTimeLocal(first[0], loc); ok {
+		if t, ok := utils.ParseTimeLocal(first[0], loc); ok {
 			r.Time = t
 		} else {
 			r.RawTime = first[0]

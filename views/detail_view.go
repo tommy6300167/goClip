@@ -9,11 +9,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"clipmini/models"
+	"clipmini/views/components/inputs"
 )
 
 type DetailView struct {
 	container        *fyne.Container
-	textEntry        *CustomEntry
+	textEntry        *inputs.CustomEntry
 	richText         *widget.RichText
 	imageCard        *widget.Card
 	saveButton       *widget.Button
@@ -30,7 +31,7 @@ type DetailView struct {
 
 func NewDetailView() *DetailView {
 	dv := &DetailView{
-		textEntry: NewCustomEntry(),
+		textEntry: inputs.NewCustomEntry(),
 		richText:  widget.NewRichText(),
 		isEditing: false,
 	}

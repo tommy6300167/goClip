@@ -1,4 +1,4 @@
-package views
+package theme
 
 import (
 	"image/color"

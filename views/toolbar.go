@@ -10,15 +10,16 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	"clipmini/controllers"
-	"clipmini/views/components"
+	"clipmini/views/components/buttons"
+	"clipmini/views/components/inputs"
 )
 
 type Toolbar struct {
 	container           *fyne.Container
-	copyBtn             *components.PillButton
-	clearBtn            *components.PillButton
-	exportBtn           *components.PillButton
-	searchInput         *components.SearchInput
+	copyBtn             *buttons.PillButton
+	clearBtn            *buttons.PillButton
+	exportBtn           *buttons.PillButton
+	searchInput         *inputs.SearchInput
 	clipboardController *controllers.ClipboardController
 	onCopy              func() error
 	onClear             func() error
@@ -34,7 +35,7 @@ func NewToolbar(window fyne.Window, clipboardController *controllers.ClipboardCo
 		window:              window,
 	}
 
-	neutral := components.DefaultPillStyle
+	neutral := buttons.DefaultPillStyle
 	neutral.Size = fyne.NewSize(88, 36)
 
 	transparent := neutral
@@ -46,11 +47,11 @@ func NewToolbar(window fyne.Window, clipboardController *controllers.ClipboardCo
 	accent.BgHover = color.NRGBA{35, 130, 118, 255} // 更深的 hover 效果
 	accent.Fg = color.NRGBA{255, 255, 255, 255}     // 白色文字確保對比度
 
-	tb.copyBtn = components.NewPillButtonWithStyle("Copy", theme.ContentCopyIcon(), tb.handleCopy, transparent)
-	tb.clearBtn = components.NewPillButtonWithStyle("Clear", theme.DeleteIcon(), tb.handleClear, transparent)
-	tb.exportBtn = components.NewPillButtonWithStyle("Export", theme.DocumentSaveIcon(), tb.handleExport, accent)
+	tb.copyBtn = buttons.NewPillButtonWithStyle("Copy", theme.ContentCopyIcon(), tb.handleCopy, transparent)
+	tb.clearBtn = buttons.NewPillButtonWithStyle("Clear", theme.DeleteIcon(), tb.handleClear, transparent)
+	tb.exportBtn = buttons.NewPillButtonWithStyle("Export", theme.DocumentSaveIcon(), tb.handleExport, accent)
 
-	tb.searchInput = components.NewSearchInput()
+	tb.searchInput = inputs.NewSearchInput()
 	tb.searchInput.SetOnChanged(func(text string) {
 		if tb.onSearch != nil {
 			tb.onSearch(text)

@@ -10,7 +10,8 @@ import (
 
 	"clipmini/controllers"
 	"clipmini/models"
-	"clipmini/views/components"
+	"clipmini/views/components/displays"
+	"clipmini/views/components/feedback"
 )
 
 type MainView struct {
@@ -18,8 +19,8 @@ type MainView struct {
 	listView            *ListView
 	detailView          *DetailView
 	toolbar             *Toolbar
-	statusBar           *components.StatusBar
-	undoToast           *components.UndoToast
+	statusBar           *displays.StatusBar
+	undoToast           *feedback.UndoToast
 	clipboardController *controllers.ClipboardController
 	config              *models.AppConfig
 	currentSelectedItem *models.ClipboardItem
@@ -36,8 +37,8 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		pendingDeleteIndex:  -1,
 	}
 
-	mv.statusBar = components.NewStatusBar("Press ⌘C Auto saving")
-	mv.undoToast = components.NewUndoToast()
+	mv.statusBar = displays.NewStatusBar("Press ⌘C Auto saving")
+	mv.undoToast = feedback.NewUndoToast()
 
 	return mv
 }

@@ -1,18 +1,16 @@
 package views
 
 import (
-	"image/color"
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"clipmini/models"
 	"clipmini/utils"
+	"clipmini/views/components/displays"
+	"clipmini/views/components/parsers"
 )
 
 type ListView struct {
@@ -43,43 +41,27 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list = widget.NewListWithData(
 		lv.historyData,
 		func() fyne.CanvasObject {
-			contentIcon := widget.NewIcon(theme.DocumentIcon())
 
-			contentText := canvas.NewText("", color.NRGBA{0xEE, 0xEE, 0xEE, 0xFF})
-			contentText.TextStyle = fyne.TextStyle{Bold: true}
-			contentText.Alignment = fyne.TextAlignLeading
-			timeText := canvas.NewText("", color.NRGBA{0xB0, 0xB0, 0xB0, 0xFF})
-			timeText.TextSize = 12
-			timeText.Alignment = fyne.TextAlignLeading
-
-			titlePad := container.NewWithoutLayout(contentText)
-			timePad := container.NewWithoutLayout(timeText)
-
-			gap := canvas.NewRectangle(color.Transparent)
-			rightInner := container.NewVBox(titlePad, gap, timePad)
-			rightContent := container.NewPadded(rightInner)
-
-			deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
-			deleteBtn.Importance = widget.LowImportance
-
-			deleteBackground := canvas.NewRectangle(color.NRGBA{0x00, 0x00, 0x00, 0x66})
-			deleteContainer := container.NewStack(deleteBackground, deleteBtn)
-
-			return container.NewBorder(nil, nil, contentIcon, deleteContainer, rightContent)
+			listItem := displays.NewListItem(displays.ListItemConfig{
+				MaxDisplayLength: lv.config.MaxDisplayLength,
+				OnDelete:         lv.onDelete,
+			})
+			return listItem.GetWidget()
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			line, _ := di.(binding.String).Get()
-			ui, ok := FindRowSubviews(co)
+
+			ui, ok := parsers.FindRowSubviews(co)
 			if !ok {
 				return
 			}
 
 			loc := utils.GetTaipeiLocation()
-			rp := ParseHistoryLine(line, lv.config.MaxDisplayLength, loc)
+			rp := parsers.ParseHistoryLine(line, lv.config.MaxDisplayLength, loc)
 
-			ApplyRow(ui, rp, lv.config.MaxDisplayLength, loc)
+			parsers.ApplyRow(ui, rp, lv.config.MaxDisplayLength, loc)
 
-			BindDeleteByLine(ui.DeleteBtn, lv.historyData, line, func(idx int) {
+			parsers.BindDeleteByLine(ui.DeleteBtn, lv.historyData, line, func(idx int) {
 				if lv.onDelete != nil {
 					lv.onDelete(idx)
 				}

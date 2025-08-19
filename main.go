@@ -13,6 +13,8 @@ import (
 	"clipmini/models"
 	"clipmini/services"
 	"clipmini/views"
+	"clipmini/views/dialogs"
+	"clipmini/views/theme"
 )
 
 var notoTC []byte
@@ -25,7 +27,7 @@ func main() {
 
 	if len(notoTC) > 0 {
 		fontResource := fyne.NewStaticResource("NotoSansTC-VariableFont_wght.ttf", notoTC)
-		customTheme := views.NewCustomTheme(fontResource)
+		customTheme := theme.NewCustomTheme(fontResource)
 		fyneApp.Settings().SetTheme(customTheme)
 	}
 
@@ -36,7 +38,7 @@ func main() {
 	needsAuth := authService.IsFirstLaunch() || !authService.IsAuthValid()
 
 	if needsAuth {
-		authDialog := views.NewAuthDialog(window)
+		authDialog := dialogs.NewAuthDialog(window)
 		authenticated := make(chan bool)
 
 		authDialog.SetOnAuth(func(key string) bool {

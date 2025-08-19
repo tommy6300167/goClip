@@ -1,4 +1,4 @@
-package views
+package parsers
 
 import (
 	"time"
@@ -10,21 +10,20 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	u "clipmini/utils"
+	"clipmini/utils"
 )
 
-type RowSubviews struct {
-	ContentIcon *widget.Icon
-	ContentText *canvas.Text
-	TimeText    *canvas.Text
-	DeleteBtn   *widget.Button
-}
-
+// FindRowSubviews 從容器中找到列表項的 UI 組件
 func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 	c, ok := co.(*fyne.Container)
 	if !ok || len(c.Objects) < 3 {
 		return RowSubviews{}, false
 	}
+
+	// ListItem 結構：
+	// c.Objects[0] = rightContent (padded container)
+	// c.Objects[1] = contentIcon
+	// c.Objects[2] = deleteContainer (stack with background + button)
 
 	rightContent, _ := c.Objects[0].(*fyne.Container)
 	contentIcon, _ := c.Objects[1].(*widget.Icon)
@@ -39,12 +38,15 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 
 	var ct, tt *canvas.Text
 	if rightContent != nil && len(rightContent.Objects) >= 1 {
-		if inner, ok := rightContent.Objects[0].(*fyne.Container); ok && len(inner.Objects) >= 3 {
+		if inner, ok := rightContent.Objects[0].(*fyne.Container); ok && len(inner.Objects) >= 2 {
+			// 結構：inner.Objects[0] = titlePad, inner.Objects[1] = gap, inner.Objects[2] = timePad
 			if titlePad, ok := inner.Objects[0].(*fyne.Container); ok && len(titlePad.Objects) > 0 {
 				ct, _ = titlePad.Objects[0].(*canvas.Text)
 			}
-			if timePad, ok := inner.Objects[2].(*fyne.Container); ok && len(timePad.Objects) > 0 {
-				tt, _ = timePad.Objects[0].(*canvas.Text)
+			if len(inner.Objects) >= 3 {
+				if timePad, ok := inner.Objects[2].(*fyne.Container); ok && len(timePad.Objects) > 0 {
+					tt, _ = timePad.Objects[0].(*canvas.Text)
+				}
 			}
 		}
 	}
@@ -52,6 +54,8 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 	ok = (contentIcon != nil && ct != nil && tt != nil && deleteBtn != nil)
 	return RowSubviews{ContentIcon: contentIcon, ContentText: ct, TimeText: tt, DeleteBtn: deleteBtn}, ok
 }
+
+// BindDeleteByLine 為刪除按鈕綁定事件
 func BindDeleteByLine(btn *widget.Button, list binding.StringList, line string, onDelete func(int)) {
 	if btn == nil || onDelete == nil {
 		return
@@ -66,7 +70,10 @@ func BindDeleteByLine(btn *widget.Button, list binding.StringList, line string, 
 		}
 	}
 }
+
+// ApplyRow 將解析後的數據應用到 UI 組件
 func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
+	// 更新圖標
 	if ui.ContentIcon != nil {
 		if rp.Kind == RowImage {
 			ui.ContentIcon.SetResource(theme.MediaPhotoIcon())
@@ -76,6 +83,7 @@ func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
 		ui.ContentIcon.Refresh()
 	}
 
+	// 更新內容文字
 	if ui.ContentText != nil {
 		if maxLen > 0 && utf8.RuneCountInString(rp.Title) > maxLen {
 			runes := []rune(rp.Title)
@@ -90,9 +98,10 @@ func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
 		ui.ContentText.Refresh()
 	}
 
+	// 更新時間文字
 	if ui.TimeText != nil {
 		if !rp.Time.IsZero() {
-			ui.TimeText.Text = u.FormatTimeWithTag(rp.Time, rp.Tag)
+			ui.TimeText.Text = utils.FormatTimeWithTag(rp.Time, rp.Tag)
 		} else {
 			txt := rp.RawTime
 			if rp.Tag != "" {
