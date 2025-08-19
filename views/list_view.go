@@ -88,7 +88,9 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list.OnSelected = func(id widget.ListItemID) {
 		lv.selectedIndex = id
 		if lv.onSelected != nil {
-			lv.onSelected(id)
+			// 將過濾後的索引轉換為原始索引
+			originalIndex := lv.getOriginalIndex(id)
+			lv.onSelected(originalIndex)
 		}
 	}
 
@@ -342,4 +344,34 @@ func (lv *ListView) matchesSearch(item string) bool {
 		content := strings.ToLower(parts[1])
 		return strings.Contains(content, searchLower)
 	}
+}
+
+// getOriginalIndex 將過濾後的索引轉換為原始索引
+func (lv *ListView) getOriginalIndex(filteredIndex int) int {
+	displayedItems, _ := lv.historyData.Get()
+	if filteredIndex < 0 || filteredIndex >= len(displayedItems) {
+		return -1
+	}
+
+	// 如果沒有搜尋過濾，直接返回索引
+	if lv.searchQuery == "" {
+		return filteredIndex
+	}
+
+	// 取得過濾後的項目
+	selectedItem := displayedItems[filteredIndex]
+
+	// 在原始項目中查找對應的索引
+	if originalIndex, exists := lv.itemCache[selectedItem]; exists {
+		return originalIndex
+	}
+
+	// 如果快取中找不到，回退到線性搜尋
+	for i, item := range lv.allItems {
+		if item == selectedItem {
+			return i
+		}
+	}
+
+	return -1
 }
