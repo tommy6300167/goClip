@@ -13,20 +13,20 @@ import (
 )
 
 type DetailView struct {
-	container        *fyne.Container
-	textEntry        *inputs.CustomEntry
-	richText         *widget.RichText
-	imageCard        *widget.Card
-	saveButton       *widget.Button
-	editButton       *widget.Button
-	currentItem      *models.ClipboardItem
-	onSave           func(string)
-	onStatusUpdate   func(string)
-	onEditingMode    func()
-	onNormalMode     func()
-	onFocusSearch    func()
-	originalText     string
-	isEditing        bool
+	container      *fyne.Container
+	textEntry      *inputs.CustomEntry
+	richText       *widget.RichText
+	imageCard      *widget.Card
+	saveButton     *widget.Button
+	editButton     *widget.Button
+	currentItem    *models.ClipboardItem
+	onSave         func(string)
+	onStatusUpdate func(string)
+	onEditingMode  func()
+	onNormalMode   func()
+	onFocusSearch  func()
+	originalText   string
+	isEditing      bool
 }
 
 func NewDetailView() *DetailView {
@@ -215,7 +215,6 @@ func (dv *DetailView) SetOnFocusSearch(callback func()) {
 }
 
 func (dv *DetailView) SetupShortcuts(window fyne.Window) {
-	// 建立編輯選單項目
 	saveMenuItem := fyne.NewMenuItem("Save", func() {
 		if dv.isEditing && dv.saveButton.Visible() {
 			dv.saveButton.OnTapped()
@@ -223,10 +222,9 @@ func (dv *DetailView) SetupShortcuts(window fyne.Window) {
 	})
 	saveMenuItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyS,
-		Modifier: fyne.KeyModifierSuper, // 修復棄用警告
+		Modifier: fyne.KeyModifierSuper,
 	}
 
-	// 建立搜尋選單項目
 	findMenuItem := fyne.NewMenuItem("Find", func() {
 		if dv.onFocusSearch != nil {
 			dv.onFocusSearch()
@@ -237,10 +235,8 @@ func (dv *DetailView) SetupShortcuts(window fyne.Window) {
 		Modifier: fyne.KeyModifierSuper,
 	}
 
-	// 建立編輯選單
 	editMenu := fyne.NewMenu("Edit", saveMenuItem, findMenuItem)
-	
-	// 也添加 Ctrl 版本給 Windows/Linux
+
 	saveCtrlMenuItem := fyne.NewMenuItem("Save (Ctrl)", func() {
 		if dv.isEditing && dv.saveButton.Visible() {
 			dv.saveButton.OnTapped()
@@ -262,8 +258,7 @@ func (dv *DetailView) SetupShortcuts(window fyne.Window) {
 	}
 
 	editMenu.Items = append(editMenu.Items, fyne.NewMenuItemSeparator(), saveCtrlMenuItem, findCtrlMenuItem)
-	
-	// 設定主選單
+
 	mainMenu := fyne.NewMainMenu(editMenu)
 	window.SetMainMenu(mainMenu)
 }
