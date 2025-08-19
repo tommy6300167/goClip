@@ -7,11 +7,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"clipmini/controllers"
 	"clipmini/models"
 	"clipmini/views/components/displays"
 	"clipmini/views/components/feedback"
+	"clipmini/views/dialogs"
 )
 
 type MainView struct {
@@ -21,12 +24,15 @@ type MainView struct {
 	toolbar             *Toolbar
 	statusBar           *displays.StatusBar
 	undoToast           *feedback.UndoToast
+	settingsBtn         *widget.Button
+	settingsDialog      *dialogs.SettingsDialog
 	clipboardController *controllers.ClipboardController
 	config              *models.AppConfig
 	currentSelectedItem *models.ClipboardItem
 	selectedIndex       int
 	pendingDeleteItem   *models.ClipboardItem
 	pendingDeleteIndex  int
+	window              fyne.Window
 }
 
 func NewMainView(clipboardController *controllers.ClipboardController, config *models.AppConfig) *MainView {
@@ -44,9 +50,21 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 }
 
 func (mv *MainView) Initialize(window fyne.Window) {
+	mv.window = window
 	mv.listView = NewListView(mv.config)
 	mv.detailView = NewDetailView()
 	mv.toolbar = NewToolbar(window, mv.clipboardController)
+	
+	// 創建設置按鈕
+	mv.settingsBtn = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+		mv.showSettings()
+	})
+	mv.settingsBtn.Importance = widget.LowImportance
+	mv.settingsBtn.Resize(fyne.NewSize(24, 24))
+	
+	// 創建設置對話框
+	mv.settingsDialog = dialogs.NewSettingsDialog(window, mv.config)
+	mv.settingsDialog.SetOnSave(mv.onSettingsSave)
 
 	mv.setupEventHandlers()
 	mv.detailView.SetupShortcuts(window)
@@ -77,7 +95,10 @@ func (mv *MainView) loadInitialData() {
 
 func (mv *MainView) buildLayout() {
 	left := container.NewBorder(nil, nil, nil, nil, mv.listView.GetWidget())
-	right := container.NewBorder(nil, mv.statusBar.GetWidget(), nil, nil, mv.detailView.GetWidget())
+	
+	// 創建右側面板，在右下角放置設置按鈕
+	rightBottom := container.NewBorder(nil, nil, nil, mv.settingsBtn, mv.statusBar.GetWidget())
+	right := container.NewBorder(nil, rightBottom, nil, nil, mv.detailView.GetWidget())
 
 	split := container.NewHSplit(left, right)
 	split.SetOffset(0.35)
@@ -153,10 +174,10 @@ func (mv *MainView) onDeleteItem(index int) {
 
 	mv.undoToast.Show("item deleted", func() {
 		mv.undoDelete()
-	}, 3*time.Second)
+	}, time.Duration(mv.config.UndoCountdownSecs)*time.Second)
 
 	go func() {
-		time.Sleep(3 * time.Second)
+		time.Sleep(time.Duration(mv.config.UndoCountdownSecs) * time.Second)
 		if mv.pendingDeleteItem != nil && !mv.undoToast.IsVisible() {
 			mv.pendingDeleteItem = nil
 			mv.pendingDeleteIndex = -1
@@ -305,4 +326,29 @@ func (mv *MainView) OnNewClipboardItem(item *models.ClipboardItem) {
 			mv.updateStatus("文字已記錄")
 		}
 	})
+}
+
+func (mv *MainView) showSettings() {
+	mv.settingsDialog.Show()
+}
+
+func (mv *MainView) onSettingsSave(newConfig *models.AppConfig) {
+	// 更新當前配置
+	mv.config.UndoCountdownSecs = newConfig.UndoCountdownSecs
+	mv.config.WindowWidth = newConfig.WindowWidth
+	mv.config.WindowHeight = newConfig.WindowHeight
+	mv.config.MaxHistoryItems = newConfig.MaxHistoryItems
+	mv.config.MaxDisplayLength = newConfig.MaxDisplayLength
+	mv.config.PollingInterval = newConfig.PollingInterval
+	
+	// 保存配置到文件
+	if err := mv.config.SaveConfig(); err != nil {
+		mv.updateStatus("保存配置失敗: " + err.Error())
+		return
+	}
+	
+	// 更新視窗大小
+	mv.window.Resize(fyne.NewSize(float32(newConfig.WindowWidth), float32(newConfig.WindowHeight)))
+	
+	mv.updateStatus("設置已保存")
 }
