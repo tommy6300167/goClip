@@ -9,6 +9,7 @@ const (
 	DefaultMaxHistoryItems  = 100
 	DefaultMaxDisplayLength = 30
 	DefaultPollingInterval  = 800
+	DefaultAuthApiEndpoint = "https://api.superclip.com/auth/validate"
 )
 
 type AppConfig struct {
@@ -18,6 +19,9 @@ type AppConfig struct {
 	LogDirPath       string
 	LogFilePath      string
 	ImageDirPath     string
+	ConfigFilePath   string
+	AuthFilePath     string
+	AuthApiEndpoint  string
 }
 
 func NewAppConfig() *AppConfig {
@@ -31,5 +35,8 @@ func NewAppConfig() *AppConfig {
 		LogDirPath:       logDir,
 		LogFilePath:      filepath.Join(logDir, "history.txt"),
 		ImageDirPath:     filepath.Join(logDir, "images"),
+		ConfigFilePath:   filepath.Join(logDir, "config.txt"),
+		AuthFilePath:     filepath.Join(logDir, "auth.json"),
+		AuthApiEndpoint:  DefaultAuthApiEndpoint,
 	}
 }

@@ -158,42 +158,32 @@ func (lv *ListView) RemoveItemAt(index int) {
 	if index < 0 || index >= len(displayedItems) {
 		return
 	}
-	
-	// 找到要刪除的項目
+
 	itemToRemove := displayedItems[index]
-	
-	// 從所有項目中移除
+
 	for i, item := range lv.allItems {
 		if item == itemToRemove {
 			lv.allItems = append(lv.allItems[:i], lv.allItems[i+1:]...)
 			break
 		}
 	}
-	
-	// 重新應用搜尋
+
 	lv.applySearch()
 }
 
-// ---- 搜尋功能 ----
-
-// SetSearchQuery 設置搜尋查詢並過濾結果
 func (lv *ListView) SetSearchQuery(query string) {
 	lv.searchQuery = strings.TrimSpace(strings.ToLower(query))
 	lv.applySearch()
 }
 
-// GetSearchQuery 獲取當前搜尋查詢
 func (lv *ListView) GetSearchQuery() string {
 	return lv.searchQuery
 }
 
-// applySearch 應用搜尋過濾
 func (lv *ListView) applySearch() {
 	if lv.searchQuery == "" {
-		// 沒有搜尋查詢，顯示所有項目
 		lv.historyData.Set(lv.allItems)
 	} else {
-		// 過濾項目
 		filtered := []string{}
 		for _, item := range lv.allItems {
 			if lv.matchesSearch(item) {
@@ -202,33 +192,26 @@ func (lv *ListView) applySearch() {
 		}
 		lv.historyData.Set(filtered)
 	}
-	
-	// 重置選擇
 	lv.selectedIndex = -1
 	lv.list.UnselectAll()
 }
 
-// matchesSearch 檢查項目是否匹配搜尋查詢
 func (lv *ListView) matchesSearch(item string) bool {
 	if lv.searchQuery == "" {
 		return true
 	}
-	
-	// 解析項目內容
+
 	parts := strings.SplitN(item, "\t", 3)
 	if len(parts) < 2 {
 		return false
 	}
-	
+
 	searchLower := lv.searchQuery
-	
-	// 檢查內容
+
 	if len(parts) == 3 && parts[2] == "IMAGE" {
-		// 圖片項目：搜尋檔案名稱
 		filename := strings.ToLower(parts[1])
 		return strings.Contains(filename, searchLower)
 	} else {
-		// 文字項目：搜尋內容
 		content := strings.ToLower(parts[1])
 		return strings.Contains(content, searchLower)
 	}

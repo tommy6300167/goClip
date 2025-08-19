@@ -73,7 +73,7 @@ func (cc *ClipboardController) PollClipboard() *models.ClipboardItem {
 
 	if txt, err := cc.clipboardService.ReadClipboardText(); err == nil {
 		normalized := strings.TrimSpace(txt)
-		if normalized != "" && normalized != cc.lastText {
+		if normalized != "" && normalized != cc.lastText && !cc.isSensitiveData(normalized) {
 			cc.lastText = normalized
 			cc.lastImgHash = ""
 			item := models.NewTextItem(txt)
@@ -123,16 +123,21 @@ func (cc *ClipboardController) ClearHistory() error {
 
 func (cc *ClipboardController) ExportHistory() string {
 	items := cc.historyService.GetItems()
-	lines := make([]string, len(items))
+	var lines []string
 
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
 		timestamp := utils.FormatTimestamp(item.Timestamp, utils.GetTaipeiLocation())
 
 		if item.Type == models.ClipImage {
-			lines[len(items)-1-i] = timestamp + "\t" + item.FilePath + "\t" + item.Type.String()
+			lines = append(lines, timestamp+"\t"+item.FilePath+"\t"+item.Type.String())
 		} else {
-			lines[len(items)-1-i] = timestamp + "\t" + item.Content
+			// 過濾敏感資料
+			if !cc.isSensitiveData(item.Content) {
+				lines = append(lines, timestamp+"\t"+item.Content)
+			} else {
+				lines = append(lines, timestamp+"\t[敏感資料已隱藏]")
+			}
 		}
 	}
 
@@ -141,4 +146,39 @@ func (cc *ClipboardController) ExportHistory() string {
 
 func (cc *ClipboardController) Count() int {
 	return len(cc.historyService.GetItems())
+}
+
+func (cc *ClipboardController) isSensitiveData(text string) bool {
+	text = strings.TrimSpace(strings.ToLower(text))
+	
+	// 檢查常見敏感資料模式
+	sensitivePatterns := []string{
+		"password",
+		"passwd",
+		"token",
+		"secret",
+		"api_key",
+		"apikey",
+		"private_key",
+		"privatekey",
+		"credential",
+		"密碼",
+		"金鑰",
+		"令牌",
+		"憑證",
+	}
+	
+	for _, pattern := range sensitivePatterns {
+		if strings.Contains(text, pattern) {
+			return true
+		}
+	}
+	
+	// 檢查是否看起來像API金鑰或token（含有特定格式）
+	if len(text) > 20 && (strings.Contains(text, "-") || strings.Contains(text, "_")) {
+		// 簡單的啟發式檢查：長度超過20且包含特殊字符可能是金鑰
+		return true
+	}
+	
+	return false
 }

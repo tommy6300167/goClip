@@ -23,7 +23,7 @@ func NewSearchInput() *SearchInput {
 	si := &SearchInput{}
 
 	si.entry = widget.NewEntry()
-	si.entry.SetPlaceHolder("搜尋剪貼簿內容...")
+	si.entry.SetPlaceHolder(" Search...")
 
 	searchIcon := widget.NewIcon(theme.SearchIcon())
 

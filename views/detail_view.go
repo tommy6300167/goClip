@@ -24,7 +24,7 @@ type DetailView struct {
 
 func NewDetailView() *DetailView {
 	dv := &DetailView{
-		textEntry: widget.NewMultiLineEntry(),
+		textEntry: widget.NewEntry(),
 	}
 
 	dv.textEntry.SetPlaceHolder("未選取任何項目")
