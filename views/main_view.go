@@ -6,10 +6,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 
 	"clipmini/controllers"
 	"clipmini/models"
+	"clipmini/views/components"
 )
 
 type MainView struct {
@@ -17,7 +17,7 @@ type MainView struct {
 	listView            *ListView
 	detailView          *DetailView
 	toolbar             *Toolbar
-	statusLabel         *widget.Label
+	statusBar           *components.StatusBar
 	clipboardController *controllers.ClipboardController
 	config              *models.AppConfig
 	currentSelectedItem *models.ClipboardItem
@@ -31,7 +31,7 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		config:              config,
 	}
 
-	mv.statusLabel = widget.NewLabel("Press ⌘C Auto saving")
+	mv.statusBar = components.NewStatusBar("Press ⌘C Auto saving")
 
 	return mv
 }
@@ -42,6 +42,7 @@ func (mv *MainView) Initialize(window fyne.Window) {
 	mv.toolbar = NewToolbar(window, mv.clipboardController)
 
 	mv.setupEventHandlers()
+	mv.detailView.SetupShortcuts(window)
 	mv.loadInitialData()
 	mv.buildLayout()
 }
@@ -51,6 +52,8 @@ func (mv *MainView) setupEventHandlers() {
 	mv.listView.SetOnDelete(mv.onDeleteItem)
 	mv.detailView.SetOnSave(mv.onSaveItem)
 	mv.detailView.SetOnStatusUpdate(mv.updateStatus)
+	mv.detailView.SetOnEditingMode(mv.setEditingMode)
+	mv.detailView.SetOnNormalMode(mv.setNormalMode)
 
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
@@ -66,7 +69,7 @@ func (mv *MainView) loadInitialData() {
 
 func (mv *MainView) buildLayout() {
 	left := container.NewBorder(nil, nil, nil, nil, mv.listView.GetWidget())
-	right := container.NewBorder(nil, mv.statusLabel, nil, nil, mv.detailView.GetWidget())
+	right := container.NewBorder(nil, mv.statusBar.GetWidget(), nil, nil, mv.detailView.GetWidget())
 
 	split := container.NewHSplit(left, right)
 	split.SetOffset(0.35)
@@ -167,7 +170,6 @@ func (mv *MainView) onCopyToClipboard() error {
 	if mv.currentSelectedItem.Type == models.ClipImage {
 		return mv.clipboardController.CopyItemToClipboard(mv.currentSelectedItem)
 	} else {
-		// 優先使用 DetailView 的當前文字，如果為空則使用原始內容
 		text := mv.detailView.GetCurrentText()
 		if text == "" {
 			text = mv.currentSelectedItem.Content
@@ -204,7 +206,23 @@ func (mv *MainView) onSearchChanged(query string) {
 }
 
 func (mv *MainView) updateStatus(message string) {
-	mv.statusLabel.SetText(message)
+	mv.statusBar.UpdateText(message)
+}
+
+func (mv *MainView) setEditingMode() {
+	mv.statusBar.SetEditingMode()
+}
+
+func (mv *MainView) setNormalMode() {
+	mv.statusBar.SetNormalMode()
+}
+
+func (mv *MainView) setErrorStatus(message string) {
+	mv.statusBar.SetErrorStatus(message)
+}
+
+func (mv *MainView) setSuccessStatus(message string) {
+	mv.statusBar.SetSuccessStatus(message)
 }
 
 func (mv *MainView) OnNewClipboardItem(item *models.ClipboardItem) {

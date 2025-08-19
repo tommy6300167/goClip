@@ -22,6 +22,10 @@ func NewCustomEntry() *CustomEntry {
 }
 
 func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
+	if key.Name != "LeftSuper" && key.Name != "RightSuper" &&
+		key.Name != "LeftControl" && key.Name != "RightControl" {
+	}
+
 	if key.Name == fyne.KeyReturn && e.preventEnterNewline {
 		if desktop := fyne.CurrentApp().Driver().(desktop.Driver); desktop != nil {
 			if modifiers := desktop.CurrentKeyModifiers(); modifiers&fyne.KeyModifierShift != 0 {
@@ -30,10 +34,8 @@ func (e *CustomEntry) TypedKey(key *fyne.KeyEvent) {
 		}
 		return
 	}
-	
 	e.Entry.TypedKey(key)
 }
-
 
 func (e *CustomEntry) SetPreventEnterNewline(prevent bool) {
 	e.preventEnterNewline = prevent

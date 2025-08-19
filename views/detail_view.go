@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -11,17 +12,20 @@ import (
 )
 
 type DetailView struct {
-	container      *fyne.Container
-	textEntry      *CustomEntry
-	richText       *widget.RichText
-	imageCard      *widget.Card
-	saveButton     *widget.Button
-	editButton     *widget.Button
-	currentItem    *models.ClipboardItem
-	onSave         func(string)
-	onStatusUpdate func(string)
-	originalText   string
-	isEditing      bool
+	container        *fyne.Container
+	textEntry        *CustomEntry
+	richText         *widget.RichText
+	imageCard        *widget.Card
+	saveButton       *widget.Button
+	editButton       *widget.Button
+	currentItem      *models.ClipboardItem
+	onSave           func(string)
+	onStatusUpdate   func(string)
+	onEditingMode    func()
+	onNormalMode     func()
+	originalText     string
+	isEditing        bool
+	saveShortcut     *fyne.Shortcut
 }
 
 func NewDetailView() *DetailView {
@@ -43,8 +47,8 @@ func NewDetailView() *DetailView {
 		}
 		dv.isEditing = false
 		dv.showAsRichText()
-		if dv.onStatusUpdate != nil {
-			dv.onStatusUpdate("Press ⌘C Auto saving")
+		if dv.onNormalMode != nil {
+			dv.onNormalMode()
 		}
 	})
 	dv.saveButton.Importance = widget.HighImportance
@@ -57,8 +61,8 @@ func NewDetailView() *DetailView {
 		dv.isEditing = true
 		dv.showAsTextEntry()
 		dv.saveButton.Show()
-		if dv.onStatusUpdate != nil {
-			dv.onStatusUpdate("Use Shift + Enter to add a line break.")
+		if dv.onEditingMode != nil {
+			dv.onEditingMode()
 		}
 	})
 
@@ -114,8 +118,8 @@ func (dv *DetailView) showAsRichText() {
 	dv.saveButton.Hide()
 	dv.editButton.Show()
 	dv.container.Refresh()
-	if dv.onStatusUpdate != nil {
-		dv.onStatusUpdate("Press ⌘C Auto saving")
+	if dv.onNormalMode != nil {
+		dv.onNormalMode()
 	}
 }
 
@@ -195,4 +199,40 @@ func (dv *DetailView) SetOnSave(callback func(string)) {
 
 func (dv *DetailView) SetOnStatusUpdate(callback func(string)) {
 	dv.onStatusUpdate = callback
+}
+
+func (dv *DetailView) SetOnEditingMode(callback func()) {
+	dv.onEditingMode = callback
+}
+
+func (dv *DetailView) SetOnNormalMode(callback func()) {
+	dv.onNormalMode = callback
+}
+
+func (dv *DetailView) SetupShortcuts(window fyne.Window) {
+	println("DEBUG: Setting up shortcuts using menu approach...")
+	
+	// 嘗試通過 Menu 系統設定快速鍵
+	// 這是唯一可靠的方式，因為許多快速鍵被作業系統攔截
+	
+	// 建立一個不可見的選單項目來綁定快速鍵
+	saveMenuItem := fyne.NewMenuItem("Save", func() {
+		println("DEBUG: Menu save triggered!")
+		if dv.isEditing {
+			dv.saveButton.OnTapped()
+		}
+	})
+	
+	// 設定快速鍵
+	saveMenuItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: desktop.SuperModifier, // Cmd 鍵
+	}
+	
+	// 建立選單但不顯示，只是為了註冊快速鍵
+	menu := fyne.NewMenu("Edit", saveMenuItem)
+	mainMenu := fyne.NewMainMenu(menu)
+	window.SetMainMenu(mainMenu)
+	
+	println("DEBUG: Shortcuts setup via menu complete")
 }
