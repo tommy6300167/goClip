@@ -31,7 +31,7 @@ func (ad *AuthDialog) SetOnCancel(callback func()) {
 
 func (ad *AuthDialog) Show() {
 	ad.keyEntry = widget.NewPasswordEntry()
-	ad.keyEntry.SetPlaceHolder("請輸入金鑰...")
+	ad.keyEntry.SetPlaceHolder("Press")
 
 	title := widget.NewLabel("首次使用需要驗證")
 	title.Alignment = fyne.TextAlignCenter
@@ -44,7 +44,6 @@ func (ad *AuthDialog) Show() {
 		if ad.onAuth != nil && ad.onAuth(key) {
 			ad.dialogWidget.Hide()
 		} else {
-			// 顯示錯誤提示
 			ad.showError("金鑰錯誤，請重新輸入")
 		}
 	})
@@ -56,7 +55,6 @@ func (ad *AuthDialog) Show() {
 		ad.dialogWidget.Hide()
 	})
 
-	// 支持Enter鍵提交
 	ad.keyEntry.OnSubmitted = func(text string) {
 		confirmButton.OnTapped()
 	}
@@ -75,7 +73,6 @@ func (ad *AuthDialog) Show() {
 	ad.dialogWidget.Resize(fyne.NewSize(350, 200))
 	ad.dialogWidget.Show()
 
-	// 自動聚焦到輸入框
 	ad.window.Canvas().Focus(ad.keyEntry)
 }
 

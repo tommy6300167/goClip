@@ -30,7 +30,7 @@ func NewDetailView() *DetailView {
 	dv.textEntry.SetPlaceHolder("未選取任何項目")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
 
-	dv.saveButton = widget.NewButtonWithIcon("保存", theme.DocumentSaveIcon(), func() {
+	dv.saveButton = widget.NewButtonWithIcon("Save", theme.DocumentSaveIcon(), func() {
 		if dv.onSave != nil {
 			dv.onSave(dv.textEntry.Text)
 		}

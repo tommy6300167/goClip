@@ -42,13 +42,13 @@ func ParseHistoryLine(line string, maxLen int, loc *time.Location) RowParsed {
 		if name == "" {
 			name = "圖片檔案"
 		}
-		r.Kind, r.Tag, r.Title = RowImage, "圖片", utils.Ellipsis(name, maxLen)
+		r.Kind, r.Tag, r.Title = RowImage, "Image", utils.Ellipsis(name, maxLen)
 		return r
 	}
 
 	if len(parts) >= 2 {
 		clean := u.CleanContent(parts[1])
-		r.Kind, r.Tag, r.Title = RowText, "文字", utils.Ellipsis(clean, maxLen)
+		r.Kind, r.Tag, r.Title = RowText, "Text", utils.Ellipsis(clean, maxLen)
 		return r
 	}
 

@@ -31,7 +31,7 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 		config:              config,
 	}
 
-	mv.statusLabel = widget.NewLabel("⌘C 內容會自動記錄（文字＋圖片）")
+	mv.statusLabel = widget.NewLabel("⌘C 會自動記錄")
 
 	return mv
 }
