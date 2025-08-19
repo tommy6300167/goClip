@@ -92,6 +92,10 @@ func (tb *Toolbar) SetOnStatusUpdate(callback func(string)) {
 	tb.onStatusUpdate = callback
 }
 
+func (tb *Toolbar) FocusSearch() {
+	tb.searchInput.Focus()
+}
+
 func (tb *Toolbar) handleCopy() {
 	if tb.onCopy != nil {
 		if err := tb.onCopy(); err != nil {

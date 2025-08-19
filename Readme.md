@@ -22,3 +22,12 @@ fyne package --os darwin \
 xattr -d com.apple.quarantine ~/Downloads/超吉貼.app
 
 rm ~/Library/Application\ Support/ClipMini/auth.json
+
+快捷鍵：
+cmd+s 編輯儲存
+cmd+f 快速搜尋
+
+shift + enter 編輯換行
+
+todo:
+cmd+e 快速編輯

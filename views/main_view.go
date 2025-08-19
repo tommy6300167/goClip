@@ -54,6 +54,7 @@ func (mv *MainView) setupEventHandlers() {
 	mv.detailView.SetOnStatusUpdate(mv.updateStatus)
 	mv.detailView.SetOnEditingMode(mv.setEditingMode)
 	mv.detailView.SetOnNormalMode(mv.setNormalMode)
+	mv.detailView.SetOnFocusSearch(mv.onFocusSearch)
 
 	mv.toolbar.SetOnCopy(mv.onCopyToClipboard)
 	mv.toolbar.SetOnClear(mv.onClearHistory)
@@ -223,6 +224,11 @@ func (mv *MainView) setErrorStatus(message string) {
 
 func (mv *MainView) setSuccessStatus(message string) {
 	mv.statusBar.SetSuccessStatus(message)
+}
+
+func (mv *MainView) onFocusSearch() {
+	mv.toolbar.FocusSearch()
+	mv.updateStatus("Search focused")
 }
 
 func (mv *MainView) OnNewClipboardItem(item *models.ClipboardItem) {

@@ -23,9 +23,9 @@ type DetailView struct {
 	onStatusUpdate   func(string)
 	onEditingMode    func()
 	onNormalMode     func()
+	onFocusSearch    func()
 	originalText     string
 	isEditing        bool
-	saveShortcut     *fyne.Shortcut
 }
 
 func NewDetailView() *DetailView {
@@ -209,30 +209,60 @@ func (dv *DetailView) SetOnNormalMode(callback func()) {
 	dv.onNormalMode = callback
 }
 
+func (dv *DetailView) SetOnFocusSearch(callback func()) {
+	dv.onFocusSearch = callback
+}
+
 func (dv *DetailView) SetupShortcuts(window fyne.Window) {
-	println("DEBUG: Setting up shortcuts using menu approach...")
-	
-	// 嘗試通過 Menu 系統設定快速鍵
-	// 這是唯一可靠的方式，因為許多快速鍵被作業系統攔截
-	
-	// 建立一個不可見的選單項目來綁定快速鍵
+	// 建立編輯選單項目
 	saveMenuItem := fyne.NewMenuItem("Save", func() {
-		println("DEBUG: Menu save triggered!")
-		if dv.isEditing {
+		if dv.isEditing && dv.saveButton.Visible() {
 			dv.saveButton.OnTapped()
 		}
 	})
-	
-	// 設定快速鍵
 	saveMenuItem.Shortcut = &desktop.CustomShortcut{
 		KeyName:  fyne.KeyS,
-		Modifier: desktop.SuperModifier, // Cmd 鍵
+		Modifier: fyne.KeyModifierSuper, // 修復棄用警告
 	}
+
+	// 建立搜尋選單項目
+	findMenuItem := fyne.NewMenuItem("Find", func() {
+		if dv.onFocusSearch != nil {
+			dv.onFocusSearch()
+		}
+	})
+	findMenuItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyF,
+		Modifier: fyne.KeyModifierSuper,
+	}
+
+	// 建立編輯選單
+	editMenu := fyne.NewMenu("Edit", saveMenuItem, findMenuItem)
 	
-	// 建立選單但不顯示，只是為了註冊快速鍵
-	menu := fyne.NewMenu("Edit", saveMenuItem)
-	mainMenu := fyne.NewMainMenu(menu)
+	// 也添加 Ctrl 版本給 Windows/Linux
+	saveCtrlMenuItem := fyne.NewMenuItem("Save (Ctrl)", func() {
+		if dv.isEditing && dv.saveButton.Visible() {
+			dv.saveButton.OnTapped()
+		}
+	})
+	saveCtrlMenuItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: fyne.KeyModifierControl,
+	}
+
+	findCtrlMenuItem := fyne.NewMenuItem("Find (Ctrl)", func() {
+		if dv.onFocusSearch != nil {
+			dv.onFocusSearch()
+		}
+	})
+	findCtrlMenuItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyF,
+		Modifier: fyne.KeyModifierControl,
+	}
+
+	editMenu.Items = append(editMenu.Items, fyne.NewMenuItemSeparator(), saveCtrlMenuItem, findCtrlMenuItem)
+	
+	// 設定主選單
+	mainMenu := fyne.NewMainMenu(editMenu)
 	window.SetMainMenu(mainMenu)
-	
-	println("DEBUG: Shortcuts setup via menu complete")
 }

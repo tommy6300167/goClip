@@ -86,3 +86,7 @@ func (si *SearchInput) SetText(text string) {
 func (si *SearchInput) Clear() {
 	si.entry.SetText("")
 }
+
+func (si *SearchInput) Focus() {
+	si.entry.FocusGained()
+}
