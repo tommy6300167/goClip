@@ -43,8 +43,8 @@ func NewToolbar(window fyne.Window, clipboardController *controllers.ClipboardCo
 
 	accent := neutral
 	accent.Bg = color.NRGBA{45, 150, 135, 255}      // 更深的藍綠色
-	accent.BgHover = color.NRGBA{35, 130, 118, 255}  // 更深的 hover 效果
-	accent.Fg = color.NRGBA{255, 255, 255, 255}      // 白色文字確保對比度
+	accent.BgHover = color.NRGBA{35, 130, 118, 255} // 更深的 hover 效果
+	accent.Fg = color.NRGBA{255, 255, 255, 255}     // 白色文字確保對比度
 
 	tb.copyBtn = components.NewPillButtonWithStyle("Copy", theme.ContentCopyIcon(), tb.handleCopy, transparent)
 	tb.clearBtn = components.NewPillButtonWithStyle("Clear", theme.DeleteIcon(), tb.handleClear, transparent)

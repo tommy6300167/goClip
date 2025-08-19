@@ -9,7 +9,7 @@ const (
 	DefaultMaxHistoryItems  = 100
 	DefaultMaxDisplayLength = 30
 	DefaultPollingInterval  = 800
-	DefaultAuthApiEndpoint = "https://api.superclip.com/auth/validate"
+	DefaultAuthApiEndpoint  = "https://api.superclip.com/auth/validate"
 )
 
 type AppConfig struct {

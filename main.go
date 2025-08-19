@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"log"
 	"time"
@@ -32,9 +33,8 @@ func main() {
 	window.Resize(fyne.NewSize(820, 520))
 	window.CenterOnScreen()
 
-	// 檢查認證狀態
 	needsAuth := authService.IsFirstLaunch() || !authService.IsAuthValid()
-	
+
 	if needsAuth {
 		authDialog := views.NewAuthDialog(window)
 		authenticated := make(chan bool)
@@ -69,7 +69,6 @@ func main() {
 
 		fyneApp.Run()
 	} else {
-		// 已有有效認證，直接進入主程式
 		initializeMainApp(config, window)
 		window.ShowAndRun()
 	}
@@ -86,39 +85,41 @@ func initializeMainApp(config *models.AppConfig, window fyne.Window) {
 
 	window.SetContent(mainView.GetContent())
 
-	stopChannel := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	authService := services.NewAuthService(config)
-	
+
+	clipboardService := services.NewClipboardService()
+	clipboardService.StartClipboardWatcher(ctx, func() {
+		if newItem := clipboardController.PollClipboard(); newItem != nil {
+			mainView.OnNewClipboardItem(newItem)
+		}
+	})
+
 	go func() {
-		clipboardTicker := time.NewTicker(time.Duration(config.PollingInterval) * time.Millisecond)
-		authTicker := time.NewTicker(1 * time.Hour) // 每小時檢查一次認證
-		defer clipboardTicker.Stop()
+		authTicker := time.NewTicker(1 * time.Hour)
 		defer authTicker.Stop()
 
 		for {
 			select {
-			case <-clipboardTicker.C:
-				if newItem := clipboardController.PollClipboard(); newItem != nil {
-					mainView.OnNewClipboardItem(newItem)
-				}
 			case <-authTicker.C:
-				// 定期檢查認證是否過期
 				if !authService.IsAuthValid() {
-					// 認證過期，需要重新驗證
 					go func() {
+						cancel()
 						window.Close()
-						// 重新啟動應用程式的認證流程
 					}()
 					return
 				}
-			case <-stopChannel:
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 
 	window.SetCloseIntercept(func() {
-		close(stopChannel)
+		cancel()
+		if historyService := clipboardController.GetHistoryService(); historyService != nil {
+			historyService.ForceFlush()
+		}
 		window.Close()
 	})
 }

@@ -22,7 +22,7 @@ func (ai *AuthInfo) IsValidOnThisDevice() bool {
 	if !ai.IsValid() {
 		return false
 	}
-	
+
 	// 需要匯入 utils 包來檢查設備指紋
 	return true // 暫時返回 true，稍後在 auth_service 中實現
 }

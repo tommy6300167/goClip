@@ -25,21 +25,26 @@ type ListView struct {
 	onDelete      func(int)
 	selectedIndex int
 	searchQuery   string
+	// 增量更新相關
+	itemCache  map[string]int // 項目內容到索引的映射
+	lastUpdate int64          // 最後更新時間戳
 }
 
 func NewListView(config *models.AppConfig) *ListView {
 	lv := &ListView{
 		historyData:   binding.NewStringList(),
 		filteredData:  binding.NewStringList(),
-		allItems:      []string{},
+		allItems:      make([]string, 0, config.MaxHistoryItems),
 		config:        config,
 		selectedIndex: -1,
+		itemCache:     make(map[string]int, config.MaxHistoryItems),
+		lastUpdate:    0,
 	}
 
 	lv.list = widget.NewListWithData(
 		lv.historyData,
 		func() fyne.CanvasObject {
-			contentIcon := widget.NewIcon(theme.FileTextIcon())
+			contentIcon := widget.NewIcon(theme.DocumentIcon())
 
 			contentText := canvas.NewText("", color.NRGBA{0xEE, 0xEE, 0xEE, 0xFF})
 			contentText.TextStyle = fyne.TextStyle{Bold: true}
@@ -100,20 +105,96 @@ func (lv *ListView) SetOnSelected(callback func(int)) { lv.onSelected = callback
 func (lv *ListView) SetOnDelete(callback func(int)) { lv.onDelete = callback }
 
 func (lv *ListView) LoadFromHistory(items []*models.ClipboardItem) {
+	// 增量更新：只在必要時重建
+	if lv.shouldFullRebuild(items) {
+		lv.fullRebuild(items)
+	} else {
+		lv.incrementalUpdate(items)
+	}
+}
+
+// shouldFullRebuild 判斷是否需要完整重建
+func (lv *ListView) shouldFullRebuild(items []*models.ClipboardItem) bool {
+	// 如果項目數量差異很大，進行完整重建
+	if abs(len(items)-len(lv.allItems)) > len(lv.allItems)/4 {
+		return true
+	}
+	// 如果是初次載入，進行完整重建
+	if len(lv.allItems) == 0 {
+		return true
+	}
+	return false
+}
+
+// fullRebuild 完整重建列表
+func (lv *ListView) fullRebuild(items []*models.ClipboardItem) {
 	lines := make([]string, len(items))
+	lv.itemCache = make(map[string]int, len(items))
+
 	for i, item := range items {
 		timestamp := utils.FormatTimestamp(item.Timestamp, utils.GetTaipeiLocation())
+		var line string
 		if item.Type == models.ClipImage {
-			lines[i] = timestamp + "\t" + item.FilePath + "\t" + item.Type.String()
+			line = timestamp + "\t" + item.FilePath + "\t" + item.Type.String()
 		} else {
-			lines[i] = timestamp + "\t" + item.Content
+			line = timestamp + "\t" + item.Content
 		}
+		lines[i] = line
+		lv.itemCache[line] = i
 	}
+
 	lv.allItems = lines
 	lv.applySearch()
 	if len(lines) > 0 {
 		lv.SelectFirst()
 	}
+}
+
+// incrementalUpdate 增量更新列表
+func (lv *ListView) incrementalUpdate(items []*models.ClipboardItem) {
+	newLines := make([]string, len(items))
+	newCache := make(map[string]int, len(items))
+
+	for i, item := range items {
+		timestamp := utils.FormatTimestamp(item.Timestamp, utils.GetTaipeiLocation())
+		var line string
+		if item.Type == models.ClipImage {
+			line = timestamp + "\t" + item.FilePath + "\t" + item.Type.String()
+		} else {
+			line = timestamp + "\t" + item.Content
+		}
+		newLines[i] = line
+		newCache[line] = i
+	}
+
+	// 檢查是否有實質變化
+	if lv.hasChanges(newLines) {
+		lv.allItems = newLines
+		lv.itemCache = newCache
+		lv.applySearch()
+	}
+}
+
+// hasChanges 檢查列表是否有變化
+func (lv *ListView) hasChanges(newLines []string) bool {
+	if len(newLines) != len(lv.allItems) {
+		return true
+	}
+
+	for i, line := range newLines {
+		if i >= len(lv.allItems) || lv.allItems[i] != line {
+			return true
+		}
+	}
+	return false
+}
+
+// abs 計算絕對值
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 func (lv *ListView) PrependItem(item *models.ClipboardItem) {
@@ -124,13 +205,23 @@ func (lv *ListView) PrependItem(item *models.ClipboardItem) {
 	} else {
 		line = timestamp + "\t" + item.Content
 	}
+
+	// 增量更新：只添加新項目
 	lv.allItems = append([]string{line}, lv.allItems...)
+
+	// 更新快取映射
+	for key, index := range lv.itemCache {
+		lv.itemCache[key] = index + 1
+	}
+	lv.itemCache[line] = 0
+
 	lv.applySearch()
 	lv.SelectFirst()
 }
 
 func (lv *ListView) Clear() {
-	lv.allItems = []string{}
+	lv.allItems = make([]string, 0, lv.config.MaxHistoryItems)
+	lv.itemCache = make(map[string]int, lv.config.MaxHistoryItems)
 	lv.historyData.Set([]string{})
 	lv.selectedIndex = -1
 }
@@ -161,18 +252,50 @@ func (lv *ListView) RemoveItemAt(index int) {
 
 	itemToRemove := displayedItems[index]
 
-	for i, item := range lv.allItems {
-		if item == itemToRemove {
-			lv.allItems = append(lv.allItems[:i], lv.allItems[i+1:]...)
-			break
+	// 增量更新：從快取中查找並移除
+	if cachedIndex, exists := lv.itemCache[itemToRemove]; exists {
+		// 從 allItems 中移除
+		lv.allItems = append(lv.allItems[:cachedIndex], lv.allItems[cachedIndex+1:]...)
+
+		// 更新快取映射
+		delete(lv.itemCache, itemToRemove)
+		for key, idx := range lv.itemCache {
+			if idx > cachedIndex {
+				lv.itemCache[key] = idx - 1
+			}
 		}
+	} else {
+		// 回退到原方法（應該很少觸發）
+		for i, item := range lv.allItems {
+			if item == itemToRemove {
+				lv.allItems = append(lv.allItems[:i], lv.allItems[i+1:]...)
+				break
+			}
+		}
+		// 重建快取
+		lv.rebuildCache()
 	}
 
 	lv.applySearch()
 }
 
+// rebuildCache 重建項目快取
+func (lv *ListView) rebuildCache() {
+	lv.itemCache = make(map[string]int, len(lv.allItems))
+	for i, item := range lv.allItems {
+		lv.itemCache[item] = i
+	}
+}
+
 func (lv *ListView) SetSearchQuery(query string) {
-	lv.searchQuery = strings.TrimSpace(strings.ToLower(query))
+	newQuery := strings.TrimSpace(strings.ToLower(query))
+
+	// 如果搜尋查詢沒有變化，跳過處理
+	if lv.searchQuery == newQuery {
+		return
+	}
+
+	lv.searchQuery = newQuery
 	lv.applySearch()
 }
 
@@ -184,7 +307,7 @@ func (lv *ListView) applySearch() {
 	if lv.searchQuery == "" {
 		lv.historyData.Set(lv.allItems)
 	} else {
-		filtered := []string{}
+		filtered := make([]string, 0, len(lv.allItems))
 		for _, item := range lv.allItems {
 			if lv.matchesSearch(item) {
 				filtered = append(filtered, item)
@@ -199,6 +322,11 @@ func (lv *ListView) applySearch() {
 func (lv *ListView) matchesSearch(item string) bool {
 	if lv.searchQuery == "" {
 		return true
+	}
+
+	// 快速檢查：如果查詢字串較短，直接在原字串中搜尋
+	if len(lv.searchQuery) <= 3 {
+		return strings.Contains(strings.ToLower(item), lv.searchQuery)
 	}
 
 	parts := strings.SplitN(item, "\t", 3)

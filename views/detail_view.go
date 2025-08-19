@@ -1,8 +1,6 @@
 package views
 
 import (
-	"strings"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -29,6 +27,7 @@ func NewDetailView() *DetailView {
 
 	dv.textEntry.SetPlaceHolder("未選取任何項目")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
+	dv.textEntry.MultiLine = true  // 支援多行文字和格式
 
 	dv.saveButton = widget.NewButtonWithIcon("Save", theme.DocumentSaveIcon(), func() {
 		if dv.onSave != nil {
@@ -117,7 +116,7 @@ func (dv *DetailView) Clear() {
 }
 
 func (dv *DetailView) GetCurrentText() string {
-	return strings.TrimSpace(dv.textEntry.Text)
+	return dv.textEntry.Text
 }
 
 func (dv *DetailView) GetCurrentItem() *models.ClipboardItem {

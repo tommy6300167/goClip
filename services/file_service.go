@@ -47,13 +47,13 @@ func (fs *FileService) WriteHistoryLines(lines []string) error {
 	if err := os.MkdirAll(fs.config.LogDirPath, 0o755); err != nil {
 		return err
 	}
-	
+
 	f, err := os.Create(fs.config.LogFilePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	
+
 	for _, line := range lines {
 		if _, err := f.WriteString(line + "\n"); err != nil {
 			return err
@@ -66,11 +66,11 @@ func (fs *FileService) SaveImage(data []byte, timestamp string) (string, error) 
 	if err := os.MkdirAll(fs.config.ImageDirPath, 0o755); err != nil {
 		return "", err
 	}
-	
+
 	filename := fmt.Sprintf("image_%s.png",
 		strings.ReplaceAll(strings.ReplaceAll(timestamp, ":", "-"), " ", "_"))
 	path := filepath.Join(fs.config.ImageDirPath, filename)
-	
+
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return "", err
 	}

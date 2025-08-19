@@ -31,7 +31,7 @@ var DefaultDeleteButtonConfig = DeleteButtonConfig{
 	Size:            fyne.NewSize(24, 24),
 	IconColor:       color.NRGBA{255, 255, 255, 255},
 	BackgroundColor: color.NRGBA{0, 0, 0, 0},        // 完全透明背景
-	HoverColor:      color.NRGBA{255, 255, 255, 20},  // 輕微的白色透明 hover 效果
+	HoverColor:      color.NRGBA{255, 255, 255, 20}, // 輕微的白色透明 hover 效果
 	Shape:           "square",
 	CornerRadius:    6,
 	Padding:         2,

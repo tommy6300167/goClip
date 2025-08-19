@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ func (cc *ClipboardController) Initialize() error {
 		}
 	} else {
 		if txt, err := cc.clipboardService.ReadClipboardText(); err == nil {
-			cc.lastText = strings.TrimSpace(txt)
+			cc.lastText = txt
 		}
 	}
 
@@ -72,9 +73,8 @@ func (cc *ClipboardController) PollClipboard() *models.ClipboardItem {
 	}
 
 	if txt, err := cc.clipboardService.ReadClipboardText(); err == nil {
-		normalized := strings.TrimSpace(txt)
-		if normalized != "" && normalized != cc.lastText && !cc.isSensitiveData(normalized) {
-			cc.lastText = normalized
+		if txt != "" && txt != cc.lastText && !cc.isSensitiveData(txt) {
+			cc.lastText = txt
 			cc.lastImgHash = ""
 			item := models.NewTextItem(txt)
 
@@ -123,7 +123,7 @@ func (cc *ClipboardController) ClearHistory() error {
 
 func (cc *ClipboardController) ExportHistory() string {
 	items := cc.historyService.GetItems()
-	var lines []string
+	lines := make([]string, 0, len(items))
 
 	for i := len(items) - 1; i >= 0; i-- {
 		item := items[i]
@@ -132,7 +132,6 @@ func (cc *ClipboardController) ExportHistory() string {
 		if item.Type == models.ClipImage {
 			lines = append(lines, timestamp+"\t"+item.FilePath+"\t"+item.Type.String())
 		} else {
-			// 過濾敏感資料
 			if !cc.isSensitiveData(item.Content) {
 				lines = append(lines, timestamp+"\t"+item.Content)
 			} else {
@@ -148,37 +147,36 @@ func (cc *ClipboardController) Count() int {
 	return len(cc.historyService.GetItems())
 }
 
+func (cc *ClipboardController) GetHistoryService() *services.HistoryService {
+	return cc.historyService
+}
+
 func (cc *ClipboardController) isSensitiveData(text string) bool {
 	text = strings.TrimSpace(strings.ToLower(text))
-	
-	// 檢查常見敏感資料模式
-	sensitivePatterns := []string{
-		"password",
-		"passwd",
-		"token",
-		"secret",
-		"api_key",
-		"apikey",
-		"private_key",
-		"privatekey",
-		"credential",
-		"密碼",
-		"金鑰",
-		"令牌",
-		"憑證",
-	}
-	
+
+	sensitivePatterns := []string{}
+
 	for _, pattern := range sensitivePatterns {
 		if strings.Contains(text, pattern) {
+			fmt.Printf("[敏感資料檢測] 發現關鍵字 '%s'，內容: %s\n", pattern, text[:min(50, len(text))])
 			return true
 		}
 	}
-	
-	// 檢查是否看起來像API金鑰或token（含有特定格式）
-	if len(text) > 20 && (strings.Contains(text, "-") || strings.Contains(text, "_")) {
-		// 簡單的啟發式檢查：長度超過20且包含特殊字符可能是金鑰
+
+	// 檢查是否看起來像API金鑰或token（更精確的檢查）
+	if len(text) > 30 && strings.Count(text, "-") >= 3 && strings.Count(text, "_") >= 2 {
+		// 更嚴格的檢查：需要更長且有更多特殊字符組合
+		fmt.Printf("[敏感資料檢測] 疑似API金鑰格式，長度: %d，內容: %s\n", len(text), text[:min(50, len(text))])
 		return true
 	}
-	
+
 	return false
+}
+
+// min 返回兩個整數中的較小值
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -62,9 +62,9 @@ func BindDeleteByLine(btn *widget.Button, list binding.StringList, line string, 
 func ApplyRow(ui RowSubviews, rp RowParsed, maxLen int, loc *time.Location) {
 	if ui.ContentIcon != nil {
 		if rp.Kind == RowImage {
-			ui.ContentIcon.SetResource(theme.FileImageIcon())
+			ui.ContentIcon.SetResource(theme.MediaPhotoIcon())
 		} else {
-			ui.ContentIcon.SetResource(theme.FileTextIcon())
+			ui.ContentIcon.SetResource(theme.DocumentIcon())
 		}
 		ui.ContentIcon.Refresh()
 	}

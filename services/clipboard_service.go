@@ -2,18 +2,28 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 )
 
-type ClipboardService struct{}
+type ClipboardService struct {
+	mu            sync.RWMutex
+	lastChangeSeq int
+	monitoring    bool
+}
 
 func NewClipboardService() *ClipboardService {
-	return &ClipboardService{}
+	return &ClipboardService{
+		lastChangeSeq: -1,
+		monitoring:    false,
+	}
 }
 
 func (cs *ClipboardService) HasImageInClipboard() bool {
@@ -66,9 +76,12 @@ func (cs *ClipboardService) ReadClipboardText() (string, error) {
 		return "", err
 	}
 	result := strings.TrimRight(out.String(), "\r\n")
+	
+	// 確保 UTF-8 編碼正確性
 	if !utf8.ValidString(result) {
 		result = strings.ToValidUTF8(result, "�")
 	}
+	
 	return result, nil
 }
 
@@ -103,4 +116,78 @@ func (cs *ClipboardService) utf8Env(cmd *exec.Cmd) *exec.Cmd {
 		"LC_CTYPE=zh_TW.UTF-8",
 	)
 	return cmd
+}
+
+// GetClipboardChangeSequence 獲取剪貼板變化序號
+func (cs *ClipboardService) GetClipboardChangeSequence() (int, error) {
+	script := `return (clipboard info) as string`
+	cmd := exec.Command("/usr/bin/osascript", "-e", script)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return 0, err
+	}
+
+	// 使用內容的哈希值作為變化序號
+	content := out.String()
+	h := sha1.Sum([]byte(content))
+	seq := int(h[0]) | int(h[1])<<8 | int(h[2])<<16 | int(h[3])<<24
+	return seq, nil
+}
+
+// HasClipboardChanged 檢查剪貼板是否變化（事件驅動）
+func (cs *ClipboardService) HasClipboardChanged() (bool, error) {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	currentSeq, err := cs.GetClipboardChangeSequence()
+	if err != nil {
+		return false, err
+	}
+
+	if cs.lastChangeSeq == -1 {
+		cs.lastChangeSeq = currentSeq
+		return false, nil
+	}
+
+	if currentSeq != cs.lastChangeSeq {
+		cs.lastChangeSeq = currentSeq
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// StartClipboardWatcher 啟動剪貼板變化監控
+func (cs *ClipboardService) StartClipboardWatcher(ctx context.Context, callback func()) {
+	cs.mu.Lock()
+	if cs.monitoring {
+		cs.mu.Unlock()
+		return
+	}
+	cs.monitoring = true
+	cs.mu.Unlock()
+
+	go func() {
+		defer func() {
+			cs.mu.Lock()
+			cs.monitoring = false
+			cs.mu.Unlock()
+		}()
+
+		// 使用較短的間隔檢查，保持響應性
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if changed, err := cs.HasClipboardChanged(); err == nil && changed {
+					callback()
+				}
+			}
+		}
+	}()
 }

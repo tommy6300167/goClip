@@ -166,15 +166,17 @@ func (mv *MainView) onCopyToClipboard() error {
 	if mv.currentSelectedItem.Type == models.ClipImage {
 		return mv.clipboardController.CopyItemToClipboard(mv.currentSelectedItem)
 	} else {
+		// 優先使用 DetailView 的當前文字，如果為空則使用原始內容
 		text := mv.detailView.GetCurrentText()
-		if text != "" {
-			return mv.clipboardController.CopyItemToClipboard(&models.ClipboardItem{
-				Type:    models.ClipText,
-				Content: text,
-			})
+		if text == "" {
+			text = mv.currentSelectedItem.Content
 		}
+		
+		return mv.clipboardController.CopyItemToClipboard(&models.ClipboardItem{
+			Type:    models.ClipText,
+			Content: text,
+		})
 	}
-	return nil
 }
 
 func (mv *MainView) onClearHistory() error {
