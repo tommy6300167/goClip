@@ -139,7 +139,6 @@ func (mv *MainView) onDeleteItem(index int) {
 		mv.selectedIndex--
 	}
 
-	// 更新詳細視圖
 	if mv.selectedIndex >= 0 && mv.selectedIndex < mv.clipboardController.Count() {
 		item := mv.clipboardController.GetHistoryItem(mv.selectedIndex)
 		mv.currentSelectedItem = item
@@ -151,16 +150,13 @@ func (mv *MainView) onDeleteItem(index int) {
 		mv.listView.GetWidget().UnselectAll()
 	}
 
-	// 顯示 undo toast
-	mv.undoToast.Show("項目已刪除", func() {
+	mv.undoToast.Show("item deleted", func() {
 		mv.undoDelete()
 	}, 3*time.Second)
 
-	// 3 秒後清理待刪除狀態
 	go func() {
 		time.Sleep(3 * time.Second)
 		if mv.pendingDeleteItem != nil && !mv.undoToast.IsVisible() {
-			// 清理待刪除狀態（項目已經真正被刪除了）
 			mv.pendingDeleteItem = nil
 			mv.pendingDeleteIndex = -1
 		}
@@ -189,12 +185,12 @@ func (mv *MainView) undoDelete() {
 	mv.pendingDeleteItem = nil
 	mv.pendingDeleteIndex = -1
 
-	mv.updateStatus("已復原項目")
+	mv.updateStatus("Undo Item")
 }
 
 func (mv *MainView) onSaveItem(newContent string) {
 	if mv.currentSelectedItem == nil {
-		mv.updateStatus("沒有選中的項目")
+		mv.updateStatus("No Selected")
 		return
 	}
 
@@ -227,7 +223,7 @@ func (mv *MainView) onSaveItem(newContent string) {
 		mv.listView.GetWidget().Select(selectedIndex)
 	}
 
-	mv.updateStatus("已保存修改")
+	mv.updateStatus("Saved")
 }
 
 func (mv *MainView) onCopyToClipboard() error {
@@ -269,7 +265,7 @@ func (mv *MainView) onSearchChanged(query string) {
 	if query == "" {
 		mv.updateStatus("顯示所有項目")
 	} else {
-		mv.updateStatus("搜尋: " + query)
+		mv.updateStatus("Search: " + query)
 	}
 }
 

@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"image/color"
 	"time"
 
@@ -12,15 +13,17 @@ import (
 )
 
 type UndoToast struct {
-	container    *fyne.Container
-	background   *canvas.Rectangle
-	messageLabel *widget.Label
-	undoBtn      *widget.Button
-	closeBtn     *widget.Button
-	isVisible    bool
-	hideTimer    *time.Timer
-	onUndo       func()
-	onClose      func()
+	container        *fyne.Container
+	background       *canvas.Rectangle
+	messageLabel     *widget.Label
+	undoBtn          *widget.Button
+	closeBtn         *widget.Button
+	isVisible        bool
+	hideTimer        *time.Timer
+	countdownTimer   *time.Ticker
+	remainingSeconds int
+	onUndo           func()
+	onClose          func()
 }
 
 func NewUndoToast() *UndoToast {
@@ -28,16 +31,13 @@ func NewUndoToast() *UndoToast {
 		isVisible: false,
 	}
 
-	// 創建背景
 	toast.background = canvas.NewRectangle(color.NRGBA{0x33, 0x33, 0x33, 0xF0})
 	toast.background.CornerRadius = 8
 
-	// 創建消息標籤
-	toast.messageLabel = widget.NewLabel("項目已刪除")
+	toast.messageLabel = widget.NewLabel("Item deleted")
 	toast.messageLabel.TextStyle = fyne.TextStyle{Bold: false}
 
-	// 創建 Undo 按鈕
-	toast.undoBtn = widget.NewButton("復原", func() {
+	toast.undoBtn = widget.NewButton("Undo", func() {
 		if toast.onUndo != nil {
 			toast.onUndo()
 		}
@@ -45,7 +45,6 @@ func NewUndoToast() *UndoToast {
 	})
 	toast.undoBtn.Importance = widget.HighImportance
 
-	// 創建關閉按鈕
 	toast.closeBtn = widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
 		if toast.onClose != nil {
 			toast.onClose()
@@ -54,7 +53,6 @@ func NewUndoToast() *UndoToast {
 	})
 	toast.closeBtn.Importance = widget.LowImportance
 
-	// 創建內容容器
 	content := container.NewHBox(
 		toast.messageLabel,
 		widget.NewSeparator(),
@@ -62,13 +60,11 @@ func NewUndoToast() *UndoToast {
 		toast.closeBtn,
 	)
 
-	// 創建主容器 - 使用 Stack 來放置背景和內容
 	toast.container = container.NewStack(
 		toast.background,
 		container.NewPadded(content),
 	)
 
-	// 初始時隱藏
 	toast.container.Hide()
 
 	return toast
@@ -79,12 +75,38 @@ func (t *UndoToast) Show(message string, onUndo func(), autoHideDuration time.Du
 		t.Hide() // 如果已經顯示，先隱藏
 	}
 
-	t.messageLabel.SetText(message)
 	t.onUndo = onUndo
 	t.isVisible = true
+	t.remainingSeconds = int(autoHideDuration.Seconds())
+
+	// 初始顯示包含倒數的消息
+	t.updateMessageWithCountdown(message)
 	t.container.Show()
 
-	// 設定自動隱藏計時器
+	// 設定倒數計時器
+	if t.countdownTimer != nil {
+		t.countdownTimer.Stop()
+	}
+
+	t.countdownTimer = time.NewTicker(1 * time.Second)
+	go func() {
+		for range t.countdownTimer.C {
+			if !t.isVisible {
+				return
+			}
+			t.remainingSeconds--
+			if t.remainingSeconds <= 0 {
+				fyne.Do(func() {
+					t.Hide()
+				})
+				return
+			}
+			fyne.Do(func() {
+				t.updateMessageWithCountdown(message)
+			})
+		}
+	}()
+
 	if t.hideTimer != nil {
 		t.hideTimer.Stop()
 	}
@@ -92,6 +114,11 @@ func (t *UndoToast) Show(message string, onUndo func(), autoHideDuration time.Du
 	t.hideTimer = time.AfterFunc(autoHideDuration, func() {
 		t.Hide()
 	})
+}
+
+func (t *UndoToast) updateMessageWithCountdown(baseMessage string) {
+	countdownMessage := fmt.Sprintf("%s (%d Second)", baseMessage, t.remainingSeconds)
+	t.messageLabel.SetText(countdownMessage)
 }
 
 func (t *UndoToast) Hide() {
@@ -104,9 +131,15 @@ func (t *UndoToast) Hide() {
 		t.hideTimer = nil
 	}
 
+	if t.countdownTimer != nil {
+		t.countdownTimer.Stop()
+		t.countdownTimer = nil
+	}
+
 	t.isVisible = false
 	t.container.Hide()
 	t.onUndo = nil
+	t.remainingSeconds = 0
 }
 
 func (t *UndoToast) SetOnClose(callback func()) {
