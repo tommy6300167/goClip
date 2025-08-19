@@ -232,11 +232,11 @@ func (lv *ListView) SelectFirst() {
 		lv.selectedIndex = 0
 		lv.list.Select(0)
 		if lv.onSelected != nil {
-			lv.onSelected(0)
+			originalIndex := lv.getOriginalIndex(0)
+			lv.onSelected(originalIndex)
 		}
 	}
 }
-
 
 func (lv *ListView) RemoveItemAt(index int) {
 	displayedItems, _ := lv.historyData.Get()
@@ -289,8 +289,18 @@ func (lv *ListView) SetSearchQuery(query string) {
 		return
 	}
 
+	wasEmpty := lv.searchQuery == ""
 	lv.searchQuery = newQuery
 	lv.applySearch()
+	
+	// 只有在從空搜尋變為有搜尋內容，或從搜尋變為空搜尋時才自動選取第一項
+	if (wasEmpty && newQuery != "") || (!wasEmpty && newQuery == "") {
+		if items, _ := lv.historyData.Get(); len(items) > 0 {
+			fyne.Do(func() {
+				lv.SelectFirst()
+			})
+		}
+	}
 }
 
 func (lv *ListView) GetSearchQuery() string {
@@ -309,6 +319,7 @@ func (lv *ListView) applySearch() {
 		}
 		lv.historyData.Set(filtered)
 	}
+	
 	lv.selectedIndex = -1
 	lv.list.UnselectAll()
 }
