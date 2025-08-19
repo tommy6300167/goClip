@@ -25,9 +25,8 @@ type ListView struct {
 	onDelete      func(int)
 	selectedIndex int
 	searchQuery   string
-	// 增量更新相關
-	itemCache  map[string]int // 項目內容到索引的映射
-	lastUpdate int64          // 最後更新時間戳
+	itemCache     map[string]int
+	lastUpdate    int64
 }
 
 func NewListView(config *models.AppConfig) *ListView {

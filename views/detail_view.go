@@ -13,29 +13,45 @@ import (
 type DetailView struct {
 	container    *fyne.Container
 	textEntry    *widget.Entry
+	richText     *widget.RichText
 	imageCard    *widget.Card
 	saveButton   *widget.Button
+	editButton   *widget.Button
 	currentItem  *models.ClipboardItem
 	onSave       func(string)
 	originalText string
+	isEditing    bool
 }
 
 func NewDetailView() *DetailView {
 	dv := &DetailView{
 		textEntry: widget.NewEntry(),
+		richText:  widget.NewRichText(),
+		isEditing: false,
 	}
 
 	dv.textEntry.SetPlaceHolder("未選取任何項目")
 	dv.textEntry.Wrapping = fyne.TextWrapWord
-	dv.textEntry.MultiLine = true  // 支援多行文字和格式
+	dv.textEntry.MultiLine = false
+	dv.textEntry.Hide()
+
+	dv.richText.Wrapping = fyne.TextWrapWord
+	dv.richText.Scroll = container.ScrollBoth
 
 	dv.saveButton = widget.NewButtonWithIcon("Save", theme.DocumentSaveIcon(), func() {
 		if dv.onSave != nil {
 			dv.onSave(dv.textEntry.Text)
 		}
+		dv.isEditing = false
+		dv.showAsRichText()
 	})
 	dv.saveButton.Importance = widget.HighImportance
 	dv.saveButton.Hide()
+
+	dv.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
+		dv.isEditing = true
+		dv.showAsTextEntry()
+	})
 
 	dv.textEntry.OnChanged = func(text string) {
 		if dv.originalText != text && dv.currentItem != nil && dv.currentItem.Type == models.ClipText {
@@ -45,8 +61,11 @@ func NewDetailView() *DetailView {
 		}
 	}
 
-	buttonContainer := container.NewHBox(container.NewPadded(dv.saveButton))
-	dv.container = container.NewBorder(nil, buttonContainer, nil, nil, dv.textEntry)
+	buttonContainer := container.NewHBox(
+		container.NewPadded(dv.editButton),
+		container.NewPadded(dv.saveButton),
+	)
+	dv.container = container.NewBorder(nil, buttonContainer, nil, nil, dv.richText)
 
 	return dv
 }
@@ -68,10 +87,28 @@ func (dv *DetailView) ShowItem(item *models.ClipboardItem) {
 func (dv *DetailView) showText(item *models.ClipboardItem) {
 	dv.originalText = item.Content
 	dv.textEntry.SetText(item.Content)
-	dv.textEntry.Show()
+	dv.richText.ParseMarkdown("```\n" + item.Content + "\n```")
 	dv.saveButton.Hide()
+	dv.editButton.Show()
 	dv.imageCard = nil
+	dv.isEditing = false
+	dv.showAsRichText()
+}
+
+func (dv *DetailView) showAsRichText() {
+	dv.textEntry.Hide()
+	dv.richText.Show()
+	dv.container.Objects[0] = dv.richText
+	dv.saveButton.Hide()
+	dv.editButton.Show()
+	dv.container.Refresh()
+}
+
+func (dv *DetailView) showAsTextEntry() {
+	dv.richText.Hide()
+	dv.textEntry.Show()
 	dv.container.Objects[0] = dv.textEntry
+	dv.editButton.Hide()
 	dv.container.Refresh()
 }
 
@@ -85,10 +122,14 @@ func (dv *DetailView) showImage(item *models.ClipboardItem) {
 		dv.imageCard = widget.NewCard("Image", timestamp, img)
 
 		dv.textEntry.Hide()
+		dv.richText.Hide()
+		dv.editButton.Hide()
 		dv.container.Objects[0] = dv.imageCard
 		dv.container.Refresh()
 	} else {
 		dv.textEntry.SetText("[IMAGE ERROR] " + item.FilePath)
+		dv.richText.Hide()
+		dv.editButton.Hide()
 		dv.textEntry.Show()
 		dv.imageCard = nil
 		dv.container.Objects[0] = dv.textEntry
@@ -98,6 +139,8 @@ func (dv *DetailView) showImage(item *models.ClipboardItem) {
 
 func (dv *DetailView) ShowError(message string) {
 	dv.textEntry.SetText("[ERROR] " + message)
+	dv.richText.Hide()
+	dv.editButton.Hide()
 	dv.textEntry.Show()
 	dv.imageCard = nil
 	dv.container.Objects[0] = dv.textEntry
@@ -106,17 +149,24 @@ func (dv *DetailView) ShowError(message string) {
 
 func (dv *DetailView) Clear() {
 	dv.textEntry.SetText("")
+	dv.richText.ParseMarkdown("")
+	dv.richText.Hide()
 	dv.textEntry.Show()
 	dv.saveButton.Hide()
+	dv.editButton.Hide()
 	dv.imageCard = nil
 	dv.currentItem = nil
 	dv.originalText = ""
+	dv.isEditing = false
 	dv.container.Objects[0] = dv.textEntry
 	dv.container.Refresh()
 }
 
 func (dv *DetailView) GetCurrentText() string {
-	return dv.textEntry.Text
+	if dv.isEditing {
+		return dv.textEntry.Text
+	}
+	return dv.originalText
 }
 
 func (dv *DetailView) GetCurrentItem() *models.ClipboardItem {

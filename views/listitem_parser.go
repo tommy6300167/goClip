@@ -26,19 +26,26 @@ type RowParsed struct {
 }
 
 func ParseHistoryLine(line string, maxLen int, loc *time.Location) RowParsed {
-	parts := strings.SplitN(line, "\t", 3)
 	r := RowParsed{RawLine: line}
 
-	if len(parts) > 0 {
-		if t, ok := u.ParseTimeLocal(parts[0], loc); ok {
+	first := strings.SplitN(line, "\t", 2)
+	if len(first) > 0 {
+		if t, ok := u.ParseTimeLocal(first[0], loc); ok {
 			r.Time = t
 		} else {
-			r.RawTime = parts[0]
+			r.RawTime = first[0]
 		}
 	}
+	if len(first) < 2 {
+		r.Kind, r.Tag, r.Title = RowText, "", utils.Ellipsis(line, maxLen)
+		return r
+	}
 
-	if len(parts) == 3 && parts[2] == "IMAGE" {
-		name := filepath.Base(parts[1])
+	rest := first[1]
+
+	if strings.HasSuffix(rest, "\tIMAGE") {
+		path := rest[:len(rest)-len("\tIMAGE")]
+		name := filepath.Base(path)
 		if name == "" {
 			name = "圖片檔案"
 		}
@@ -46,12 +53,6 @@ func ParseHistoryLine(line string, maxLen int, loc *time.Location) RowParsed {
 		return r
 	}
 
-	if len(parts) >= 2 {
-		clean := u.CleanContent(parts[1])
-		r.Kind, r.Tag, r.Title = RowText, "Text", utils.Ellipsis(clean, maxLen)
-		return r
-	}
-
-	r.Kind, r.Tag, r.Title = RowText, "", utils.Ellipsis(line, maxLen)
+	r.Kind, r.Tag, r.Title = RowText, "Text", utils.Ellipsis(rest, maxLen)
 	return r
 }

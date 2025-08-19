@@ -29,11 +29,12 @@ func ReverseSlice(ss []string) []string {
 }
 
 func CleanContent(s string) string {
-	s = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ").Replace(s)
-	for strings.Contains(s, "  ") {
-		s = strings.ReplaceAll(s, "  ", " ")
-	}
-	return strings.TrimSpace(s)
+	lines := strings.Split(s, "\n")
+	firstLine := lines[0]
+
+	firstLine = strings.ReplaceAll(firstLine, "\r", " ")
+
+	return strings.TrimRight(firstLine, " \t")
 }
 
 func ParseTimeLocal(ts string, loc *time.Location) (time.Time, bool) {
