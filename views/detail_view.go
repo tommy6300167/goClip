@@ -70,7 +70,6 @@ func NewDetailView() *DetailView {
 
 	dv.textEntry.SetPreventEnterNewline(true)
 
-	// 初始狀態下禁用 Edit 按鈕
 	dv.editButton.Disable()
 
 	buttonContainer := container.NewHBox(

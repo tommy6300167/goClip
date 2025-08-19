@@ -237,13 +237,6 @@ func (lv *ListView) SelectFirst() {
 	}
 }
 
-func (lv *ListView) GetSelectedItem() (string, bool) {
-	items, _ := lv.historyData.Get()
-	if lv.selectedIndex < 0 || lv.selectedIndex >= len(items) {
-		return "", false
-	}
-	return items[lv.selectedIndex], true
-}
 
 func (lv *ListView) RemoveItemAt(index int) {
 	displayedItems, _ := lv.historyData.Get()

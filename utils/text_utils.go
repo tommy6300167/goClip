@@ -19,23 +19,6 @@ func TruncateText(s string, max int) string {
 	return s
 }
 
-func ReverseSlice(ss []string) []string {
-	n := len(ss)
-	out := make([]string, n)
-	for i := range ss {
-		out[n-1-i] = ss[i]
-	}
-	return out
-}
-
-func CleanContent(s string) string {
-	lines := strings.Split(s, "\n")
-	firstLine := lines[0]
-
-	firstLine = strings.ReplaceAll(firstLine, "\r", " ")
-
-	return strings.TrimRight(firstLine, " \t")
-}
 
 func ParseTimeLocal(ts string, loc *time.Location) (time.Time, bool) {
 	t, err := time.Parse(TimeLayout, ts)
