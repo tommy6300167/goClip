@@ -48,22 +48,25 @@ func NewListView(config *models.AppConfig) *ListView {
 			contentText := canvas.NewText("", color.NRGBA{0xEE, 0xEE, 0xEE, 0xFF})
 			contentText.TextStyle = fyne.TextStyle{Bold: true}
 			contentText.Alignment = fyne.TextAlignLeading
-			titlePad := container.NewPadded(contentText)
-
 			timeText := canvas.NewText("", color.NRGBA{0xB0, 0xB0, 0xB0, 0xFF})
 			timeText.TextSize = 12
 			timeText.Alignment = fyne.TextAlignLeading
-			timePad := container.NewPadded(timeText)
+
+			titlePad := container.NewWithoutLayout(contentText)
+			timePad := container.NewWithoutLayout(timeText)
 
 			gap := canvas.NewRectangle(color.Transparent)
-			gap.SetMinSize(fyne.NewSize(1, 2))
-
 			rightInner := container.NewVBox(titlePad, gap, timePad)
 			rightContent := container.NewPadded(rightInner)
 
 			deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
 			deleteBtn.Importance = widget.LowImportance
-			return container.NewBorder(nil, nil, contentIcon, deleteBtn, rightContent)
+
+			// 為垃圾桶添加背景
+			deleteBackground := canvas.NewRectangle(color.NRGBA{0x00, 0x00, 0x00, 0x66})
+			deleteContainer := container.NewStack(deleteBackground, deleteBtn)
+
+			return container.NewBorder(nil, nil, contentIcon, deleteContainer, rightContent)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			line, _ := di.(binding.String).Get()
@@ -88,7 +91,6 @@ func NewListView(config *models.AppConfig) *ListView {
 	lv.list.OnSelected = func(id widget.ListItemID) {
 		lv.selectedIndex = id
 		if lv.onSelected != nil {
-			// 將過濾後的索引轉換為原始索引
 			originalIndex := lv.getOriginalIndex(id)
 			lv.onSelected(originalIndex)
 		}
@@ -207,10 +209,8 @@ func (lv *ListView) PrependItem(item *models.ClipboardItem) {
 		line = timestamp + "\t" + item.Content
 	}
 
-	// 增量更新：只添加新項目
 	lv.allItems = append([]string{line}, lv.allItems...)
 
-	// 更新快取映射
 	for key, index := range lv.itemCache {
 		lv.itemCache[key] = index + 1
 	}
@@ -246,12 +246,9 @@ func (lv *ListView) RemoveItemAt(index int) {
 
 	itemToRemove := displayedItems[index]
 
-	// 增量更新：從快取中查找並移除
 	if cachedIndex, exists := lv.itemCache[itemToRemove]; exists {
-		// 從 allItems 中移除
 		lv.allItems = append(lv.allItems[:cachedIndex], lv.allItems[cachedIndex+1:]...)
 
-		// 更新快取映射
 		delete(lv.itemCache, itemToRemove)
 		for key, idx := range lv.itemCache {
 			if idx > cachedIndex {
@@ -259,21 +256,18 @@ func (lv *ListView) RemoveItemAt(index int) {
 			}
 		}
 	} else {
-		// 回退到原方法（應該很少觸發）
 		for i, item := range lv.allItems {
 			if item == itemToRemove {
 				lv.allItems = append(lv.allItems[:i], lv.allItems[i+1:]...)
 				break
 			}
 		}
-		// 重建快取
 		lv.rebuildCache()
 	}
 
 	lv.applySearch()
 }
 
-// rebuildCache 重建項目快取
 func (lv *ListView) rebuildCache() {
 	lv.itemCache = make(map[string]int, len(lv.allItems))
 	for i, item := range lv.allItems {
@@ -292,7 +286,7 @@ func (lv *ListView) SetSearchQuery(query string) {
 	wasEmpty := lv.searchQuery == ""
 	lv.searchQuery = newQuery
 	lv.applySearch()
-	
+
 	// 只有在從空搜尋變為有搜尋內容，或從搜尋變為空搜尋時才自動選取第一項
 	if (wasEmpty && newQuery != "") || (!wasEmpty && newQuery == "") {
 		if items, _ := lv.historyData.Get(); len(items) > 0 {
@@ -319,7 +313,7 @@ func (lv *ListView) applySearch() {
 		}
 		lv.historyData.Set(filtered)
 	}
-	
+
 	lv.selectedIndex = -1
 	lv.list.UnselectAll()
 }

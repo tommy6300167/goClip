@@ -28,7 +28,14 @@ func FindRowSubviews(co fyne.CanvasObject) (RowSubviews, bool) {
 
 	rightContent, _ := c.Objects[0].(*fyne.Container)
 	contentIcon, _ := c.Objects[1].(*widget.Icon)
-	deleteBtn, _ := c.Objects[2].(*widget.Button)
+	
+	// 處理被包裝在容器中的垃圾桶按鈕
+	var deleteBtn *widget.Button
+	if deleteContainer, ok := c.Objects[2].(*fyne.Container); ok && len(deleteContainer.Objects) >= 2 {
+		deleteBtn, _ = deleteContainer.Objects[1].(*widget.Button)
+	} else {
+		deleteBtn, _ = c.Objects[2].(*widget.Button)
+	}
 
 	var ct, tt *canvas.Text
 	if rightContent != nil && len(rightContent.Objects) >= 1 {
