@@ -110,6 +110,10 @@ func (cc *ClipboardController) RemoveHistoryItem(index int) error {
 	return cc.historyService.RemoveItem(index)
 }
 
+func (cc *ClipboardController) InsertHistoryItemAt(index int, item *models.ClipboardItem) error {
+	return cc.historyService.InsertItemAt(index, item)
+}
+
 func (cc *ClipboardController) UpdateHistoryItem(index int, newContent string) error {
 	return cc.historyService.UpdateItem(index, newContent)
 }

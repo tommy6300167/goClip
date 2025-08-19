@@ -62,7 +62,6 @@ func NewListView(config *models.AppConfig) *ListView {
 			deleteBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
 			deleteBtn.Importance = widget.LowImportance
 
-			// 為垃圾桶添加背景
 			deleteBackground := canvas.NewRectangle(color.NRGBA{0x00, 0x00, 0x00, 0x66})
 			deleteContainer := container.NewStack(deleteBackground, deleteBtn)
 

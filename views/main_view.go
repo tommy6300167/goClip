@@ -2,6 +2,7 @@ package views
 
 import (
 	"image/color"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -18,10 +19,13 @@ type MainView struct {
 	detailView          *DetailView
 	toolbar             *Toolbar
 	statusBar           *components.StatusBar
+	undoToast           *components.UndoToast
 	clipboardController *controllers.ClipboardController
 	config              *models.AppConfig
 	currentSelectedItem *models.ClipboardItem
 	selectedIndex       int
+	pendingDeleteItem   *models.ClipboardItem
+	pendingDeleteIndex  int
 }
 
 func NewMainView(clipboardController *controllers.ClipboardController, config *models.AppConfig) *MainView {
@@ -29,9 +33,11 @@ func NewMainView(clipboardController *controllers.ClipboardController, config *m
 	mv := &MainView{
 		clipboardController: clipboardController,
 		config:              config,
+		pendingDeleteIndex:  -1,
 	}
 
 	mv.statusBar = components.NewStatusBar("Press ⌘C Auto saving")
+	mv.undoToast = components.NewUndoToast()
 
 	return mv
 }
@@ -77,7 +83,9 @@ func (mv *MainView) buildLayout() {
 	mainContent := container.NewBorder(mv.toolbar.GetWidget(), nil, nil, nil, split)
 	bg := canvas.NewRectangle(color.NRGBA{R: 33, G: 39, B: 44, A: 255})
 
-	mv.content = container.NewStack(bg, mainContent)
+	toastContainer := container.NewBorder(nil, mv.undoToast.GetWidget(), nil, nil, nil)
+
+	mv.content = container.NewStack(bg, mainContent, toastContainer)
 }
 
 func (mv *MainView) GetContent() *fyne.Container {
@@ -95,12 +103,32 @@ func (mv *MainView) onItemSelected(index int) {
 }
 
 func (mv *MainView) onDeleteItem(index int) {
+	// 先獲取要刪除的項目，用於 undo 功能
+	itemToDelete := mv.clipboardController.GetHistoryItem(index)
+	if itemToDelete == nil {
+		mv.updateStatus("找不到要刪除的項目")
+		return
+	}
+
+	// 保存刪除項目的信息，用於 undo
+	mv.pendingDeleteItem = &models.ClipboardItem{
+		Type:      itemToDelete.Type,
+		Content:   itemToDelete.Content,
+		FilePath:  itemToDelete.FilePath,
+		Timestamp: itemToDelete.Timestamp,
+	}
+	mv.pendingDeleteIndex = index
+
+	// 從控制器中移除項目（但保存在 pending 中以便復原）
 	if err := mv.clipboardController.RemoveHistoryItem(index); err != nil {
 		mv.updateStatus("刪除失敗: " + err.Error())
 		return
 	}
+
+	// 從 UI 中移除
 	mv.listView.RemoveItemAt(index)
 
+	// 調整選中項目索引
 	if mv.selectedIndex == index {
 		if index >= mv.clipboardController.Count() {
 			mv.selectedIndex = mv.clipboardController.Count() - 1
@@ -111,7 +139,8 @@ func (mv *MainView) onDeleteItem(index int) {
 		mv.selectedIndex--
 	}
 
-	if mv.selectedIndex >= 0 {
+	// 更新詳細視圖
+	if mv.selectedIndex >= 0 && mv.selectedIndex < mv.clipboardController.Count() {
 		item := mv.clipboardController.GetHistoryItem(mv.selectedIndex)
 		mv.currentSelectedItem = item
 		mv.detailView.ShowItem(item)
@@ -122,7 +151,45 @@ func (mv *MainView) onDeleteItem(index int) {
 		mv.listView.GetWidget().UnselectAll()
 	}
 
-	mv.updateStatus("項目已刪除")
+	// 顯示 undo toast
+	mv.undoToast.Show("項目已刪除", func() {
+		mv.undoDelete()
+	}, 3*time.Second)
+
+	// 3 秒後清理待刪除狀態
+	go func() {
+		time.Sleep(3 * time.Second)
+		if mv.pendingDeleteItem != nil && !mv.undoToast.IsVisible() {
+			// 清理待刪除狀態（項目已經真正被刪除了）
+			mv.pendingDeleteItem = nil
+			mv.pendingDeleteIndex = -1
+		}
+	}()
+}
+
+func (mv *MainView) undoDelete() {
+	if mv.pendingDeleteItem == nil {
+		return
+	}
+
+	err := mv.clipboardController.InsertHistoryItemAt(mv.pendingDeleteIndex, mv.pendingDeleteItem)
+	if err != nil {
+		mv.updateStatus("復原失敗: " + err.Error())
+		return
+	}
+
+	items := mv.clipboardController.GetHistoryItems()
+	mv.listView.LoadFromHistory(items)
+
+	mv.selectedIndex = mv.pendingDeleteIndex
+	mv.currentSelectedItem = mv.pendingDeleteItem
+	mv.detailView.ShowItem(mv.pendingDeleteItem)
+	mv.listView.GetWidget().Select(mv.pendingDeleteIndex)
+
+	mv.pendingDeleteItem = nil
+	mv.pendingDeleteIndex = -1
+
+	mv.updateStatus("已復原項目")
 }
 
 func (mv *MainView) onSaveItem(newContent string) {

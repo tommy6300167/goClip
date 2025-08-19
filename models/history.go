@@ -54,6 +54,28 @@ func (h *History) RemoveItem(index int) *ClipboardItem {
 	return removedItem
 }
 
+func (h *History) InsertItemAt(index int, item *ClipboardItem) {
+	if index < 0 {
+		index = 0
+	}
+	if index > len(h.Items) {
+		index = len(h.Items)
+	}
+
+	// 創建新的切片並插入項目
+	newItems := make([]*ClipboardItem, len(h.Items)+1)
+	copy(newItems[:index], h.Items[:index])
+	newItems[index] = item
+	copy(newItems[index+1:], h.Items[index:])
+
+	h.Items = newItems
+
+	// 如果超出最大項目數，移除最後的項目
+	if len(h.Items) > h.MaxItems {
+		h.Items = h.Items[:h.MaxItems]
+	}
+}
+
 func (h *History) UpdateItem(index int, newContent string) bool {
 	if index < 0 || index >= len(h.Items) {
 		return false

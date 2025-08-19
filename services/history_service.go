@@ -78,6 +78,15 @@ func (hs *HistoryService) RemoveItem(index int) error {
 	return nil
 }
 
+func (hs *HistoryService) InsertItemAt(index int, item *models.ClipboardItem) error {
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+	
+	hs.history.InsertItemAt(index, item)
+	hs.scheduleBatchSave()
+	return nil
+}
+
 func (hs *HistoryService) UpdateItem(index int, newContent string) error {
 	hs.mu.Lock()
 	defer hs.mu.Unlock()
