@@ -44,7 +44,7 @@ func NewDetailView() *DetailView {
 		dv.isEditing = false
 		dv.showAsRichText()
 		if dv.onStatusUpdate != nil {
-			dv.onStatusUpdate("⌘C 會自動記錄")
+			dv.onStatusUpdate("⌘C Auto saving")
 		}
 	})
 	dv.saveButton.Importance = widget.HighImportance
@@ -53,16 +53,15 @@ func NewDetailView() *DetailView {
 	dv.editButton = widget.NewButtonWithIcon("Edit", theme.DocumentCreateIcon(), func() {
 		dv.isEditing = true
 		dv.showAsTextEntry()
+		dv.saveButton.Show()
 		if dv.onStatusUpdate != nil {
 			dv.onStatusUpdate("Use Shift + Enter to add a line break.")
 		}
 	})
 
 	dv.textEntry.OnChanged = func(text string) {
-		if dv.originalText != text && dv.currentItem != nil && dv.currentItem.Type == models.ClipText {
+		if dv.isEditing {
 			dv.saveButton.Show()
-		} else {
-			dv.saveButton.Hide()
 		}
 	}
 
