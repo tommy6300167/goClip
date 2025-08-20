@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// RowKind 定義列表項類型
 type RowKind int
 
 const (
@@ -15,7 +14,6 @@ const (
 	RowImage
 )
 
-// RowParsed 解析後的列表項數據
 type RowParsed struct {
 	RawLine string
 	Kind    RowKind
@@ -25,7 +23,6 @@ type RowParsed struct {
 	RawTime string
 }
 
-// RowSubviews 列表項的 UI 組件
 type RowSubviews struct {
 	ContentIcon *widget.Icon
 	ContentText *canvas.Text

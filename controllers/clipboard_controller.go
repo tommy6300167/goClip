@@ -167,9 +167,7 @@ func (cc *ClipboardController) isSensitiveData(text string) bool {
 		}
 	}
 
-	// 檢查是否看起來像API金鑰或token（更精確的檢查）
 	if len(text) > 30 && strings.Count(text, "-") >= 3 && strings.Count(text, "_") >= 2 {
-		// 更嚴格的檢查：需要更長且有更多特殊字符組合
 		fmt.Printf("[敏感資料檢測] 疑似API金鑰格式，長度: %d，內容: %s\n", len(text), text[:min(50, len(text))])
 		return true
 	}
@@ -177,7 +175,6 @@ func (cc *ClipboardController) isSensitiveData(text string) bool {
 	return false
 }
 
-// min 返回兩個整數中的較小值
 func min(a, b int) int {
 	if a < b {
 		return a

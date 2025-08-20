@@ -76,12 +76,11 @@ func (cs *ClipboardService) ReadClipboardText() (string, error) {
 		return "", err
 	}
 	result := strings.TrimRight(out.String(), "\r\n")
-	
-	// 確保 UTF-8 編碼正確性
+
 	if !utf8.ValidString(result) {
 		result = strings.ToValidUTF8(result, "�")
 	}
-	
+
 	return result, nil
 }
 
@@ -118,7 +117,6 @@ func (cs *ClipboardService) utf8Env(cmd *exec.Cmd) *exec.Cmd {
 	return cmd
 }
 
-// GetClipboardChangeSequence 獲取剪貼板變化序號
 func (cs *ClipboardService) GetClipboardChangeSequence() (int, error) {
 	script := `return (clipboard info) as string`
 	cmd := exec.Command("/usr/bin/osascript", "-e", script)
@@ -128,14 +126,12 @@ func (cs *ClipboardService) GetClipboardChangeSequence() (int, error) {
 		return 0, err
 	}
 
-	// 使用內容的哈希值作為變化序號
 	content := out.String()
 	h := sha1.Sum([]byte(content))
 	seq := int(h[0]) | int(h[1])<<8 | int(h[2])<<16 | int(h[3])<<24
 	return seq, nil
 }
 
-// HasClipboardChanged 檢查剪貼板是否變化（事件驅動）
 func (cs *ClipboardService) HasClipboardChanged() (bool, error) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
@@ -158,7 +154,6 @@ func (cs *ClipboardService) HasClipboardChanged() (bool, error) {
 	return false, nil
 }
 
-// StartClipboardWatcher 啟動剪貼板變化監控
 func (cs *ClipboardService) StartClipboardWatcher(ctx context.Context, callback func()) {
 	cs.mu.Lock()
 	if cs.monitoring {
@@ -175,7 +170,6 @@ func (cs *ClipboardService) StartClipboardWatcher(ctx context.Context, callback 
 			cs.mu.Unlock()
 		}()
 
-		// 使用較短的間隔檢查，保持響應性
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 

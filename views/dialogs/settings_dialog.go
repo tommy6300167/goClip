@@ -15,16 +15,16 @@ import (
 )
 
 type SettingsDialog struct {
-	dialog           dialog.Dialog
-	window           fyne.Window
-	config           *models.AppConfig
-	onSave           func(*models.AppConfig)
-	undoEntry        *widget.Entry
-	widthEntry       *widget.Entry
-	heightEntry      *widget.Entry
-	historyEntry     *widget.Entry
-	displayEntry     *widget.Entry
-	pollingEntry     *widget.Entry
+	dialog       dialog.Dialog
+	window       fyne.Window
+	config       *models.AppConfig
+	onSave       func(*models.AppConfig)
+	undoEntry    *widget.Entry
+	widthEntry   *widget.Entry
+	heightEntry  *widget.Entry
+	historyEntry *widget.Entry
+	displayEntry *widget.Entry
+	pollingEntry *widget.Entry
 }
 
 func NewSettingsDialog(window fyne.Window, config *models.AppConfig) *SettingsDialog {
@@ -38,7 +38,6 @@ func NewSettingsDialog(window fyne.Window, config *models.AppConfig) *SettingsDi
 }
 
 func (sd *SettingsDialog) buildDialog(window fyne.Window) {
-	// 創建輸入字段
 	sd.undoEntry = widget.NewEntry()
 	sd.undoEntry.SetText(strconv.Itoa(sd.config.UndoCountdownSecs))
 
@@ -57,7 +56,6 @@ func (sd *SettingsDialog) buildDialog(window fyne.Window) {
 	sd.pollingEntry = widget.NewEntry()
 	sd.pollingEntry.SetText(strconv.Itoa(sd.config.PollingInterval))
 
-	// 創建表單
 	form := &widget.Form{
 		Items: []*widget.FormItem{
 			{Text: "刪除倒數 (秒)", Widget: sd.undoEntry},
@@ -80,7 +78,6 @@ func (sd *SettingsDialog) buildDialog(window fyne.Window) {
 	form.SubmitText = "保存"
 	form.CancelText = "取消"
 
-	// 添加重置按鈕
 	resetBtn := widget.NewButtonWithIcon("重置為默認值", theme.ViewRefreshIcon(), func() {
 		sd.resetToDefaults()
 	})
@@ -99,7 +96,6 @@ func (sd *SettingsDialog) buildDialog(window fyne.Window) {
 }
 
 func (sd *SettingsDialog) validateAndSave() bool {
-	// 驗證並解析輸入
 	undoSecs, err := strconv.Atoi(strings.TrimSpace(sd.undoEntry.Text))
 	if err != nil || undoSecs < 1 || undoSecs > 60 {
 		dialog.ShowError(errors.New("刪除倒數必須是 1-60 之間的整數"), sd.window)
@@ -136,7 +132,6 @@ func (sd *SettingsDialog) validateAndSave() bool {
 		return false
 	}
 
-	// 創建新配置
 	newConfig := &models.AppConfig{
 		UndoCountdownSecs: undoSecs,
 		WindowWidth:       width,
@@ -144,13 +139,12 @@ func (sd *SettingsDialog) validateAndSave() bool {
 		MaxHistoryItems:   maxHistory,
 		MaxDisplayLength:  maxDisplay,
 		PollingInterval:   polling,
-		// 保持其他字段不變
-		LogDirPath:      sd.config.LogDirPath,
-		LogFilePath:     sd.config.LogFilePath,
-		ImageDirPath:    sd.config.ImageDirPath,
-		ConfigFilePath:  sd.config.ConfigFilePath,
-		AuthFilePath:    sd.config.AuthFilePath,
-		AuthApiEndpoint: sd.config.AuthApiEndpoint,
+		LogDirPath:        sd.config.LogDirPath,
+		LogFilePath:       sd.config.LogFilePath,
+		ImageDirPath:      sd.config.ImageDirPath,
+		ConfigFilePath:    sd.config.ConfigFilePath,
+		AuthFilePath:      sd.config.AuthFilePath,
+		AuthApiEndpoint:   sd.config.AuthApiEndpoint,
 	}
 
 	if sd.onSave != nil {

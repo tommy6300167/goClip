@@ -8,7 +8,6 @@ import (
 	"clipmini/utils"
 )
 
-// ParseHistoryLine 解析歷史記錄行
 func ParseHistoryLine(line string, maxLen int, loc *time.Location) RowParsed {
 	r := RowParsed{RawLine: line}
 

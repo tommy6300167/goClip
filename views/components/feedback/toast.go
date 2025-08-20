@@ -72,18 +72,16 @@ func NewUndoToast() *UndoToast {
 
 func (t *UndoToast) Show(message string, onUndo func(), autoHideDuration time.Duration) {
 	if t.isVisible {
-		t.Hide() // 如果已經顯示，先隱藏
+		t.Hide()
 	}
 
 	t.onUndo = onUndo
 	t.isVisible = true
 	t.remainingSeconds = int(autoHideDuration.Seconds())
 
-	// 初始顯示包含倒數的消息
 	t.updateMessageWithCountdown(message)
 	t.container.Show()
 
-	// 設定倒數計時器
 	if t.countdownTimer != nil {
 		t.countdownTimer.Stop()
 	}

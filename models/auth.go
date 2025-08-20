@@ -17,14 +17,12 @@ func (ai *AuthInfo) IsValid() bool {
 	return time.Now().Before(ai.ExpiresAt)
 }
 
-// IsValidOnThisDevice 檢查認證是否在當前設備有效
 func (ai *AuthInfo) IsValidOnThisDevice() bool {
 	if !ai.IsValid() {
 		return false
 	}
 
-	// 需要匯入 utils 包來檢查設備指紋
-	return true // 暫時返回 true，稍後在 auth_service 中實現
+	return true
 }
 
 func (ai *AuthInfo) IsExpiringSoon() bool {

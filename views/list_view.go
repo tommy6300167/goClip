@@ -89,7 +89,6 @@ func (lv *ListView) SetOnSelected(callback func(int)) { lv.onSelected = callback
 func (lv *ListView) SetOnDelete(callback func(int)) { lv.onDelete = callback }
 
 func (lv *ListView) LoadFromHistory(items []*models.ClipboardItem) {
-	// 增量更新：只在必要時重建
 	if lv.shouldFullRebuild(items) {
 		lv.fullRebuild(items)
 	} else {
@@ -97,20 +96,16 @@ func (lv *ListView) LoadFromHistory(items []*models.ClipboardItem) {
 	}
 }
 
-// shouldFullRebuild 判斷是否需要完整重建
 func (lv *ListView) shouldFullRebuild(items []*models.ClipboardItem) bool {
-	// 如果項目數量差異很大，進行完整重建
 	if abs(len(items)-len(lv.allItems)) > len(lv.allItems)/4 {
 		return true
 	}
-	// 如果是初次載入，進行完整重建
 	if len(lv.allItems) == 0 {
 		return true
 	}
 	return false
 }
 
-// fullRebuild 完整重建列表
 func (lv *ListView) fullRebuild(items []*models.ClipboardItem) {
 	lines := make([]string, len(items))
 	lv.itemCache = make(map[string]int, len(items))
@@ -134,7 +129,6 @@ func (lv *ListView) fullRebuild(items []*models.ClipboardItem) {
 	}
 }
 
-// incrementalUpdate 增量更新列表
 func (lv *ListView) incrementalUpdate(items []*models.ClipboardItem) {
 	newLines := make([]string, len(items))
 	newCache := make(map[string]int, len(items))
@@ -151,7 +145,6 @@ func (lv *ListView) incrementalUpdate(items []*models.ClipboardItem) {
 		newCache[line] = i
 	}
 
-	// 檢查是否有實質變化
 	if lv.hasChanges(newLines) {
 		lv.allItems = newLines
 		lv.itemCache = newCache
@@ -159,7 +152,6 @@ func (lv *ListView) incrementalUpdate(items []*models.ClipboardItem) {
 	}
 }
 
-// hasChanges 檢查列表是否有變化
 func (lv *ListView) hasChanges(newLines []string) bool {
 	if len(newLines) != len(lv.allItems) {
 		return true
@@ -173,7 +165,6 @@ func (lv *ListView) hasChanges(newLines []string) bool {
 	return false
 }
 
-// abs 計算絕對值
 func abs(x int) int {
 	if x < 0 {
 		return -x
@@ -259,7 +250,6 @@ func (lv *ListView) rebuildCache() {
 func (lv *ListView) SetSearchQuery(query string) {
 	newQuery := strings.TrimSpace(strings.ToLower(query))
 
-	// 如果搜尋查詢沒有變化，跳過處理
 	if lv.searchQuery == newQuery {
 		return
 	}
@@ -268,7 +258,6 @@ func (lv *ListView) SetSearchQuery(query string) {
 	lv.searchQuery = newQuery
 	lv.applySearch()
 
-	// 只有在從空搜尋變為有搜尋內容，或從搜尋變為空搜尋時才自動選取第一項
 	if (wasEmpty && newQuery != "") || (!wasEmpty && newQuery == "") {
 		if items, _ := lv.historyData.Get(); len(items) > 0 {
 			fyne.Do(func() {
@@ -304,7 +293,6 @@ func (lv *ListView) matchesSearch(item string) bool {
 		return true
 	}
 
-	// 快速檢查：如果查詢字串較短，直接在原字串中搜尋
 	if len(lv.searchQuery) <= 3 {
 		return strings.Contains(strings.ToLower(item), lv.searchQuery)
 	}
@@ -325,27 +313,22 @@ func (lv *ListView) matchesSearch(item string) bool {
 	}
 }
 
-// getOriginalIndex 將過濾後的索引轉換為原始索引
 func (lv *ListView) getOriginalIndex(filteredIndex int) int {
 	displayedItems, _ := lv.historyData.Get()
 	if filteredIndex < 0 || filteredIndex >= len(displayedItems) {
 		return -1
 	}
 
-	// 如果沒有搜尋過濾，直接返回索引
 	if lv.searchQuery == "" {
 		return filteredIndex
 	}
 
-	// 取得過濾後的項目
 	selectedItem := displayedItems[filteredIndex]
 
-	// 在原始項目中查找對應的索引
 	if originalIndex, exists := lv.itemCache[selectedItem]; exists {
 		return originalIndex
 	}
 
-	// 如果快取中找不到，回退到線性搜尋
 	for i, item := range lv.allItems {
 		if item == selectedItem {
 			return i

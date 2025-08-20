@@ -186,14 +186,12 @@ func (as *AuthService) validateWithAPI(licenseKey string) bool {
 }
 
 func (as *AuthService) fallbackValidation(licenseKey string) bool {
-	// 測試用的本地驗證（API未實現時使用）
 	validTestKeys := []string{
 		"test-key-2024",
 		"superclip-test",
 		"dev-license-001",
 	}
 
-	// 除錯：顯示輸入的金鑰
 	println("DEBUG: 輸入的金鑰:", licenseKey)
 
 	for _, validKey := range validTestKeys {
@@ -201,7 +199,6 @@ func (as *AuthService) fallbackValidation(licenseKey string) bool {
 		if licenseKey == validKey {
 			println("DEBUG: 金鑰匹配成功")
 
-			// 獲取設備指紋
 			deviceFingerprint, err := utils.DeviceFingerprint()
 			if err != nil {
 				println("DEBUG: 設備指紋生成失敗:", err.Error())
@@ -209,7 +206,6 @@ func (as *AuthService) fallbackValidation(licenseKey string) bool {
 			}
 			println("DEBUG: 設備指紋:", deviceFingerprint)
 
-			// 創建測試用的認證資訊（30天有效期）
 			authInfo := &models.AuthInfo{
 				PublicKey:         "test-public-key-" + licenseKey,
 				ExpiresAt:         time.Now().Add(30 * 24 * time.Hour),
@@ -234,8 +230,6 @@ func (as *AuthService) fallbackValidation(licenseKey string) bool {
 }
 
 func (as *AuthService) SaveAuthConfig() error {
-	// 在新架構下，認證資訊已在 validateWithAPI 中保存
-	// 這個方法保留用於向後兼容或額外配置
 	if err := os.MkdirAll(as.config.LogDirPath, 0755); err != nil {
 		return err
 	}
@@ -244,28 +238,23 @@ func (as *AuthService) SaveAuthConfig() error {
 	return os.WriteFile(as.config.ConfigFilePath, []byte(content), 0644)
 }
 
-// GetAuthStatus 獲取認證狀態
 func (as *AuthService) GetAuthStatus() (*models.AuthInfo, error) {
 	return as.loadAuthInfo()
 }
 
-// IsAuthValid 檢查認證是否有效（包含設備驗證）
 func (as *AuthService) IsAuthValid() bool {
 	authInfo, err := as.loadAuthInfo()
 	if err != nil {
 		return false
 	}
 
-	// 檢查時間是否過期
 	if !authInfo.IsValid() {
 		return false
 	}
 
-	// 檢查設備指紋
 	return utils.IsValidDeviceFingerprint(authInfo.DeviceFingerprint)
 }
 
-// GetTimeUntilExpiry 獲取距離過期的時間
 func (as *AuthService) GetTimeUntilExpiry() (time.Duration, error) {
 	authInfo, err := as.loadAuthInfo()
 	if err != nil {
@@ -274,7 +263,6 @@ func (as *AuthService) GetTimeUntilExpiry() (time.Duration, error) {
 	return time.Until(authInfo.ExpiresAt), nil
 }
 
-// ClearAuth 清除認證資訊（用於登出或重置）
 func (as *AuthService) ClearAuth() error {
 	return os.Remove(as.config.AuthFilePath)
 }

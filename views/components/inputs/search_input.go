@@ -89,16 +89,14 @@ func (si *SearchInput) Clear() {
 }
 
 func (si *SearchInput) Focus() {
-	// 延遲執行以確保 UI 已經完全渲染
+
 	go func() {
-		// 小延遲確保焦點設置生效
 		time.Sleep(10 * time.Millisecond)
 		fyne.Do(func() {
-			// 設置光標位置
+
 			si.entry.CursorRow = 0
 			si.entry.CursorColumn = len(si.entry.Text)
-			
-			// 使用 Fyne 的推薦方式設置焦點
+
 			if canvas := fyne.CurrentApp().Driver().CanvasForObject(si.entry); canvas != nil {
 				canvas.Focus(si.entry)
 			}
