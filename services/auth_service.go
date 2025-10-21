@@ -126,20 +126,16 @@ func (as *AuthService) validateStoredAuth() bool {
 		return false
 	}
 
-	// 檢查是否過期
 	if !authInfo.IsValid() {
 		println("DEBUG: 認證已過期")
 		return false
 	}
 
-	// 檢查設備指紋是否匹配
 	if !utils.IsValidDeviceFingerprint(authInfo.DeviceFingerprint) {
-		// 設備指紋不匹配，可能是盜版或複製
 		println("DEBUG: 設備指紋不匹配")
 		return false
 	}
 
-	// 更新最後驗證時間
 	authInfo.LastValidate = time.Now()
 	as.saveAuthInfo(authInfo)
 
